@@ -10,7 +10,7 @@ from flask_jsonapi import resource
 
 
 @pytest.fixture
-def test_client_with_example_model(app):
+def example_schema():
     class ExmapleSchema(marshmallow_jsonapi.Schema):
         id = fields.Str(dump_only=True, required=True)
         body = fields.Str()
@@ -21,22 +21,25 @@ def test_client_with_example_model(app):
             self_view = 'example_detail'
             self_view_kwargs = {'example_id': '<id>'}
             strict = True
+    return ExmapleSchema
 
+
+@pytest.fixture
+def example_model():
     ExampleModel = collections.namedtuple('ExampleModel', 'id body')
+    return ExampleModel
 
+
+def test_integration(app, example_schema, example_model):
     class ExampleListView(resource.ResourceList):
-        schema = ExmapleSchema
+        schema = example_schema
 
         def get_list(self):
-            return [ExampleModel(id='1234', body='heheh'), ExampleModel(id='5678', body='hihi')]
+            return [example_model(id='1234', body='heheh'), example_model(id='5678', body='hihi')]
 
     application_api = api.Api(app)
     application_api.route(ExampleListView, 'example_list', '/examples/')
-    return app.test_client()
-
-
-def test_integration(test_client_with_example_model):
-    response = test_client_with_example_model.get(
+    response = app.test_client().get(
         '/examples/',
         headers={'content-type': 'application/vnd.api+json'}
     )
