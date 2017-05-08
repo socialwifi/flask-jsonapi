@@ -33,13 +33,13 @@ class JsonApiErrorResponse:
     base_header = {'Content-Type': 'application/vnd.api+json'}
 
     def __init__(self, *jsonapi_errors, status=None):
-        self.jsonapi_error_list = jsonapi_errors
+        self.jsonapi_errors_tuple = jsonapi_errors
         self.status = status or http.HTTPStatus.INTERNAL_SERVER_ERROR
 
     @property
     def jsonapi_errors(self):
         return {
-            'errors': self.jsonapi_error_list,
+            'errors': list(self.jsonapi_errors_tuple),
             'jsonapi': {
                 'version': '1.0'
             }
@@ -47,7 +47,7 @@ class JsonApiErrorResponse:
 
     def make_error_response(self):
         response = helpers.make_response(
-            self.jsonapi_errors,
+            json.dumps(self.jsonapi_errors),
             self.status,
         )
         response.headers.extend(self.base_header)
