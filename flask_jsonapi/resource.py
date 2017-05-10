@@ -87,7 +87,7 @@ class ResourceList(Resource):
                         status=http.HTTPStatus.CREATED,
                     )
 
-    def post(self, request, *args, **kwargs):
+    def post(self, *args, **kwargs):
         pass
 
 
