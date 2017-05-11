@@ -1,3 +1,6 @@
+import http
+
+
 class JsonApiException(Exception):
     title = 'Unknown error'
     status = 500
@@ -88,3 +91,17 @@ class RelationNotFound(JsonApiException):
 class InvalidType(JsonApiException):
     title = "Invalid type"
     status = 409
+
+
+def get_error_and_raise_exception(
+        errors_dict,
+        title='Validation error.',
+        status=http.HTTPStatus.UNPROCESSABLE_ENTITY,
+        exception=JsonApiException):
+    error = errors_dict['errors'][0]
+    raise exception(
+        source=error['source'],
+        detail=error['detail'],
+        title=title,
+        status=status
+    )

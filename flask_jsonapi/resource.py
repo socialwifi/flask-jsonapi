@@ -4,6 +4,7 @@ import marshmallow
 from flask import logging
 from flask import request
 from flask import views, helpers
+from marshmallow_jsonapi import exceptions as marshmallow_jsonapi_exceptions
 
 from flask_jsonapi import decorators
 from flask_jsonapi import exceptions
@@ -88,7 +89,28 @@ class ResourceList(Resource):
                     )
 
     def post(self, *args, **kwargs):
-        pass
+        try:
+            data, errors = self.schema().load(request.get_json())
+        except marshmallow_jsonapi_exceptions.IncorrectTypeError as e:
+            exceptions.get_error_and_raise_exception(errors_dict=e.messages, title='Incorrect type error.')
+        except marshmallow.ValidationError as e:
+            exceptions.get_error_and_raise_exception(errors_dict=e.messages)
+        else:
+            if errors:
+                exceptions.get_error_and_raise_exception(errors_dict=errors)
+            else:
+                try:
+                    object = self.create(data=data)
+                except DataLayerError as e:
+                    raise exceptions.JsonApiException(
+                        source='',
+                        detail=str(e)
+                    )
+                else:
+                    return response.JsonApiResponse(
+                        self.schema().dump(object).data,
+                        status=http.HTTPStatus.CREATED,
+                    )
 
 
 class DataLayerError(Exception):
