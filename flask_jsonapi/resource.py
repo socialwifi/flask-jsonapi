@@ -57,25 +57,19 @@ class ResourceList(Resource):
         raise NotImplementedError
 
     def get(self, *args, **kwargs):
+        objects_list = self.get_list()
         try:
-            objects_list = self.get_list()
-        except DataLayerObjectNotFound as e:
-            raise exceptions.ObjectNotFound(source='', detail=str(e))
-        except DataLayerError as e:
-            raise exceptions.JsonApiException(source='', detail=str(e))
+            objects, errors = self.schema(many=True).dump(objects_list)
+        except marshmallow.ValidationError as e:
+            exceptions.get_error_and_raise_exception(errors_dict=e.messages)
         else:
-            try:
-                objects, errors = self.schema(many=True).dump(objects_list)
-            except marshmallow.ValidationError as e:
-                exceptions.get_error_and_raise_exception(errors_dict=e.messages)
+            if errors:
+                exceptions.get_error_and_raise_exception(errors_dict=errors)
             else:
-                if errors:
-                    exceptions.get_error_and_raise_exception(errors_dict=errors)
-                else:
-                    return response.JsonApiListResponse(
-                        response_data=objects,
-                        status=http.HTTPStatus.CREATED,
-                    )
+                return response.JsonApiListResponse(
+                    response_data=objects,
+                    status=http.HTTPStatus.CREATED,
+                )
 
     def post(self, *args, **kwargs):
         try:
@@ -88,23 +82,8 @@ class ResourceList(Resource):
             if errors:
                 exceptions.get_error_and_raise_exception(errors_dict=errors)
             else:
-                try:
-                    object = self.create(data=data)
-                except DataLayerError as e:
-                    raise exceptions.JsonApiException(
-                        source='',
-                        detail=str(e)
-                    )
-                else:
-                    return response.JsonApiResponse(
-                        self.schema().dump(object).data,
-                        status=http.HTTPStatus.CREATED,
-                    )
-
-
-class DataLayerError(Exception):
-    pass
-
-
-class DataLayerObjectNotFound(DataLayerError):
-    pass
+                object = self.create(data=data)
+                return response.JsonApiResponse(
+                    self.schema().dump(object).data,
+                    status=http.HTTPStatus.CREATED,
+                )
