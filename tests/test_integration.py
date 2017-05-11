@@ -12,7 +12,7 @@ from flask_jsonapi import resource
 @pytest.fixture
 def example_schema():
     class ExmapleSchema(marshmallow_jsonapi.Schema):
-        id = fields.Str(dump_only=True, required=True)
+        id = fields.UUID(required=True)
         body = fields.Str()
 
         class Meta:
@@ -30,12 +30,15 @@ def example_model():
     return ExampleModel
 
 
-def test_integration(app, example_schema, example_model):
+def test_integration_get_list(app, example_schema, example_model):
     class ExampleListView(resource.ResourceList):
         schema = example_schema
 
         def get_list(self):
-            return [example_model(id='1234', body='heheh'), example_model(id='5678', body='hihi')]
+            return [
+                example_model(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a4', body='heheh'),
+                example_model(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a5', body='hihi'),
+            ]
 
     application_api = api.Api(app)
     application_api.route(ExampleListView, 'example_list', '/examples/')
@@ -47,13 +50,13 @@ def test_integration(app, example_schema, example_model):
     assert result == {
         'data': [
             {
-                'id': '1234',
+                'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a4',
                 'type': 'example',
                 'attributes': {
                     'body': 'heheh'
                 }
             }, {
-                'id': '5678',
+                'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a5',
                 'type': 'example',
                 'attributes': {
                     'body': 'hihi'
