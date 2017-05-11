@@ -50,10 +50,10 @@ class ResourceList(Resource):
         raise NotImplementedError
 
     def get_list(self):
-        pass
+        raise NotImplementedError
 
-    def create(self):
-        pass
+    def create(self, *args, **kwargs):
+        raise NotImplementedError
 
     def get(self, *args, **kwargs):
         try:
