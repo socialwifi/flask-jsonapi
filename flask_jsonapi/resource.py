@@ -67,21 +67,10 @@ class ResourceList(Resource):
             try:
                 objects, errors = self.schema(many=True).dump(objects_list)
             except marshmallow.ValidationError as e:
-                raise exceptions.JsonApiException(
-                    source='',
-                    detail=str(e),
-                    title='Validation Error.',
-                    status=http.HTTPStatus.UNPROCESSABLE_ENTITY
-                )
+                exceptions.get_error_and_raise_exception(errors_dict=e.messages)
             else:
                 if errors:
-                    error = errors['errors'].pop()
-                    raise exceptions.JsonApiException(
-                        source=error.source,
-                        detail=error.detail,
-                        title=error.title,
-                        status=error.status
-                    )
+                    exceptions.get_error_and_raise_exception(errors_dict=errors)
                 else:
                     return response.JsonApiListResponse(
                         response_data=objects,
