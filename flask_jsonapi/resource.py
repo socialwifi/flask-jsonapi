@@ -50,14 +50,14 @@ class ResourceList(Resource):
     def schema(self):
         raise NotImplementedError
 
-    def get_list(self):
+    def read_many(self):
         raise NotImplementedError
 
     def create(self, *args, **kwargs):
         raise NotImplementedError
 
     def get(self, *args, **kwargs):
-        objects_list = self.get_list()
+        objects_list = self.read_many()
         try:
             objects, errors = self.schema(many=True).dump(objects_list)
         except marshmallow.ValidationError as e:

@@ -34,7 +34,7 @@ def test_integration_get_list(app, example_schema, example_model):
     class ExampleListView(resource.ResourceList):
         schema = example_schema
 
-        def get_list(self):
+        def read_many(self):
             return [
                 example_model(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a4', body='heheh'),
                 example_model(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a5', body='hihi'),
