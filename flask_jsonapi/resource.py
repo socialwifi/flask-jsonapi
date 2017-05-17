@@ -14,7 +14,7 @@ from flask_jsonapi import response
 logger = logging.getLogger(__name__)
 
 
-class ResourceBase(views.MethodView):
+class ResourceBase(views.View):
     @classmethod
     def as_view(cls, name, *class_args, **class_kwargs):
         view = super().as_view(name, *class_args, **class_kwargs)
