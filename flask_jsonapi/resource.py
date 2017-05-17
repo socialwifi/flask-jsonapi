@@ -14,7 +14,7 @@ from flask_jsonapi import response
 logger = logging.getLogger(__name__)
 
 
-class Resource(views.MethodView):
+class ResourceBase(views.MethodView):
     @classmethod
     def as_view(cls, name, *class_args, **class_kwargs):
         view = super().as_view(name, *class_args, **class_kwargs)
@@ -43,7 +43,7 @@ class Resource(views.MethodView):
         return helpers.make_response('Method Not Allowed.', http.HTTPStatus.METHOD_NOT_ALLOWED)
 
 
-class ResourceList(Resource):
+class ResourceList(ResourceBase):
     methods = ['GET', 'POST']
 
     @property
