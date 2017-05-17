@@ -46,16 +46,6 @@ class ResourceBase(views.MethodView):
 class ResourceList(ResourceBase):
     methods = ['GET', 'POST']
 
-    @property
-    def schema(self):
-        raise NotImplementedError
-
-    def read_many(self):
-        raise NotImplementedError
-
-    def create(self, *args, **kwargs):
-        raise NotImplementedError
-
     def get(self, *args, **kwargs):
         objects_list = self.read_many()
         try:
@@ -87,3 +77,13 @@ class ResourceList(ResourceBase):
                     self.schema().dump(object).data,
                     status=http.HTTPStatus.CREATED,
                 )
+
+    @property
+    def schema(self):
+        raise NotImplementedError
+
+    def read_many(self):
+        raise NotImplementedError
+
+    def create(self, *args, **kwargs):
+        raise NotImplementedError
