@@ -28,10 +28,10 @@ class ResourceBase(views.View):
             return response.JsonApiErrorResponse(
                 e.to_dict(),
                 status=e.status
-            ).make_error_response()
+            ).make_response()
         except Exception as e:
             error = exceptions.JsonApiException(source='', detail=str(e), title='Unknown error.')
-            return response.JsonApiErrorResponse(error.to_dict()).make_error_response()
+            return response.JsonApiErrorResponse(error.to_dict()).make_response()
         else:
             return response_object.make_response()
 

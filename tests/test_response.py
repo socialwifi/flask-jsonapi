@@ -15,7 +15,7 @@ def test_jsonapi_error_response(app):
                 title='Something terrible happened.',
                 status=http.HTTPStatus.INTERNAL_SERVER_ERROR
             ).to_dict()
-        ).make_error_response()
+        ).make_response()
         assert json.loads(error_response.data.decode()) == {
             "jsonapi": {
                 "version": "1.0"
