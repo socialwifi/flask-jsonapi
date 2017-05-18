@@ -107,3 +107,119 @@ def test_integration_create_resource(app, example_schema, example_model):
             "version": "1.0"
         }
     }
+
+
+def test_integration_get(app, example_schema, example_model):
+
+    class ExampleDetailView(resource.ResourceDetail):
+        schema = example_schema
+
+        def read(self, id):
+            return example_model(id=id, body='Gwynbelidd')
+
+    application_api = api.Api(app)
+    application_api.route(ExampleDetailView, 'example_detail', '/examples/<id>/')
+    response = app.test_client().get(
+        '/examples/f60717a3-7dc2-4f1a-bdf4-f2804c3127a4/',
+        headers={'content-type': 'application/vnd.api+json'}
+    )
+    result = json.loads(response.data.decode())
+    assert result == {
+        'data': {
+            'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a4',
+            'type': 'example',
+            'attributes': {
+                'body': 'Gwynbelidd'
+            }
+        },
+        'jsonapi': {
+            'version': '1.0'
+        }
+    }
+
+
+def test_integration_delete(app, example_schema, example_model):
+
+    class ExampleDetailView(resource.ResourceDetail):
+        schema = example_schema
+        deleted_ids = []
+
+        def remove(self, id):
+            self.deleted_ids.append(id)
+
+    application_api = api.Api(app)
+    application_api.route(ExampleDetailView, 'example_detail', '/examples/<id>/')
+    response = app.test_client().delete(
+        '/examples/f60717a3-7dc2-4f1a-bdf4-f2804c3127a4/',
+        headers={'content-type': 'application/vnd.api+json'}
+    )
+    assert response.status_code == 204
+    assert response.data == b''
+    assert ExampleDetailView.deleted_ids == ['f60717a3-7dc2-4f1a-bdf4-f2804c3127a4']
+
+
+def test_integration_patch(app, example_schema, example_model):
+
+    class ExampleDetailView(resource.ResourceDetail):
+        schema = example_schema
+
+        def update(self, id, data):
+            data.pop('id')
+            return example_model(id=id, **data)
+
+    json_data = json.dumps({
+        'data': {
+            'type': 'example',
+            'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a4',
+            'attributes': {
+                'body': "Nice body.",
+            }
+        }
+    })
+    application_api = api.Api(app)
+    application_api.route(ExampleDetailView, 'example_list', '/examples/<id>/')
+    response = app.test_client().patch(
+        '/examples/f60717a3-7dc2-4f1a-bdf4-f2804c3127a4/',
+        headers={'content-type': 'application/vnd.api+json'},
+        data=json_data,
+    )
+    assert json.loads(response.data.decode()) == {
+        "data": {
+            "type": "example",
+            "id": "f60717a3-7dc2-4f1a-bdf4-f2804c3127a4",
+            "attributes": {
+                "body": "Nice body."
+            }
+        },
+        "jsonapi": {
+            "version": "1.0"
+        }
+    }
+
+
+def test_integration_patch_with_empty_response(app, example_schema, example_model):
+
+    class ExampleDetailView(resource.ResourceDetail):
+        schema = example_schema
+
+        def update(self, id, data):
+            pass
+
+    json_data = json.dumps({
+        'data': {
+            'type': 'example',
+            'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a4',
+            'attributes': {
+                'body': "Nice body.",
+            }
+        }
+    })
+    application_api = api.Api(app)
+    application_api.route(ExampleDetailView, 'example_list', '/examples/<id>/')
+    response = app.test_client().patch(
+        '/examples/f60717a3-7dc2-4f1a-bdf4-f2804c3127a4/',
+        headers={'content-type': 'application/vnd.api+json'},
+        data=json_data,
+    )
+    assert response.status_code == 204
+    assert response.data == b''

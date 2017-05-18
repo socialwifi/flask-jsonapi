@@ -21,6 +21,14 @@ class BaseResponse:
         raise NotImplementedError
 
 
+class EmptyResponse(BaseResponse):
+    def __init__(self, headers=None, status=http.HTTPStatus.NO_CONTENT):
+        super().__init__(headers, status)
+
+    def get_content(self):
+        return ''
+
+
 class BaseJsonApiResponse(BaseResponse):
     base_header = {'Content-Type': 'application/vnd.api+json'}
 
