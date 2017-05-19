@@ -34,9 +34,6 @@ class ResourceBase(views.View):
                 e.to_dict(),
                 status=e.status
             ).make_response()
-        except Exception as e:
-            error = exceptions.JsonApiException(source='', detail=str(e), title='Unknown error.')
-            return response.JsonApiErrorResponse(error.to_dict()).make_response()
         else:
             return response_object.make_response()
 
