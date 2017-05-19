@@ -92,7 +92,7 @@ class ResourceDetail(ResourceBase):
     def read(self, id):
         raise NotImplementedError
 
-    def update(self, id, **data):
+    def update(self, id, data):
         raise NotImplementedError
 
     def remove(self, id):
@@ -141,5 +141,5 @@ class ResourceList(ResourceBase):
     def read_many(self):
         raise NotImplementedError
 
-    def create(self, *args, **kwargs):
+    def create(self, data):
         raise NotImplementedError
