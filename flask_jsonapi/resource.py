@@ -62,7 +62,7 @@ class ResourceDetail(ResourceBase):
                 return response.JsonApiResponse(data)
 
     def delete(self, *args, **kwargs):
-        self.remove(self.resource_id)
+        self.destroy(self.resource_id)
         return response.EmptyResponse()
 
     def patch(self, *args, **kwargs):
@@ -95,7 +95,7 @@ class ResourceDetail(ResourceBase):
     def update(self, id, data):
         raise NotImplementedError
 
-    def remove(self, id):
+    def destroy(self, id):
         raise NotImplementedError
 
 

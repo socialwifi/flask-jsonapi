@@ -144,7 +144,7 @@ def test_integration_delete(app, example_schema, example_model):
         schema = example_schema
         deleted_ids = []
 
-        def remove(self, id):
+        def destroy(self, id):
             self.deleted_ids.append(id)
 
     application_api = api.Api(app)
