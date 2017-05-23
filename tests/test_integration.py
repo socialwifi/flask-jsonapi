@@ -6,6 +6,7 @@ import pytest
 from marshmallow_jsonapi import fields
 
 from flask_jsonapi import api
+from flask_jsonapi import filters_schema
 from flask_jsonapi import resource
 
 
@@ -34,7 +35,7 @@ def test_integration_get_list(app, example_schema, example_model):
     class ExampleListView(resource.ResourceList):
         schema = example_schema
 
-        def read_many(self):
+        def read_many(self, filters):
             return [
                 example_model(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a4', body='heheh'),
                 example_model(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a5', body='hihi'),
@@ -70,6 +71,38 @@ def test_integration_get_list(app, example_schema, example_model):
             'count': 2
         }
     }
+
+
+def test_integration_get_filtered_list(app, example_schema, example_model):
+    class ExampleListView(resource.ResourceList):
+        schema = example_schema
+        filter_schema = filters_schema.FilterSchema({
+            'basic': filters_schema.FilterField(),
+            'listed': filters_schema.ListFilterField(),
+            'renamed': filters_schema.FilterField(field_name='dumb-name'),
+            'integer': filters_schema.FilterField(parse_value=int),
+            'skipped_filter': filters_schema.FilterField(),
+
+        })
+
+        applied_filters = []
+
+        def read_many(self, filters):
+            self.applied_filters.append(filters)
+            return []
+
+    application_api = api.Api(app)
+    application_api.route(ExampleListView, 'example_list', '/examples/')
+    app.test_client().get(
+        '/examples/?filter[basic]=text&filter[listed]=first,second&filter[dumb-name]=another&filter[integer]=3',
+        headers={'content-type': 'application/vnd.api+json'}
+    )
+    assert ExampleListView.applied_filters == [{
+        'basic': 'text',
+        'listed': ['first', 'second'],
+        'renamed': 'another',
+        'integer': 3,
+    }]
 
 
 def test_integration_create_resource(app, example_schema, example_model):

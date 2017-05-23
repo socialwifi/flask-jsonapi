@@ -8,6 +8,7 @@ from marshmallow_jsonapi import exceptions as marshmallow_jsonapi_exceptions
 
 from flask_jsonapi import decorators
 from flask_jsonapi import exceptions
+from flask_jsonapi import filters_schema
 from flask_jsonapi import response
 
 
@@ -101,9 +102,10 @@ class ResourceDetail(ResourceBase):
 
 class ResourceList(ResourceBase):
     methods = ['GET', 'POST']
+    filter_schema = filters_schema.FilterSchema({})
 
     def get(self, *args, **kwargs):
-        objects_list = self.read_many()
+        objects_list = self.read_many(filters=self.filter_schema.parse())
         try:
             objects, errors = self.schema(many=True).dump(objects_list)
         except marshmallow.ValidationError as e:
@@ -138,7 +140,7 @@ class ResourceList(ResourceBase):
     def schema(self):
         raise NotImplementedError
 
-    def read_many(self):
+    def read_many(self, filters):
         raise NotImplementedError
 
     def create(self, data):
