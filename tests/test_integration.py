@@ -1,5 +1,6 @@
 import collections
 import json
+from unittest import mock
 
 import marshmallow_jsonapi
 import pytest
@@ -140,6 +141,51 @@ def test_integration_create_resource(app, example_schema, example_model):
             "version": "1.0"
         }
     }
+
+
+def test_integration_create_resource_invalid_input(app, example_schema, example_model):
+    class TestSchema(marshmallow_jsonapi.Schema):
+        id = fields.UUID()
+        f1 = fields.Str(required=True)
+        f2 = fields.Str(required=True)
+        class Meta:
+            type_ = 'test'
+            strict = True
+
+    class ExampleListView(resource.ResourceList):
+        schema = TestSchema
+
+        def create(self, *args, **kwargs):
+            return example_model(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a4', body='Nice body.')
+
+    json_data = json.dumps({
+        'data': {
+            'type': 'test',
+        }
+    })
+    application_api = api.Api(app)
+    application_api.route(ExampleListView, 'example_list', '/examples/')
+    response = app.test_client().post(
+        '/examples/',
+        headers={'content-type': 'application/vnd.api+json'},
+        data=json_data,
+    )
+    result = json.loads(response.data.decode())
+    assert result == {
+        'errors': mock.ANY,
+        "jsonapi": {
+            "version": "1.0"
+        }
+    }
+    assert list(sorted(result['errors'], key=lambda x: x['source']['pointer'])) == [
+        {
+            'detail': 'Missing data for required field.',
+            'source': {'pointer': '/data/attributes/f1'}
+        }, {
+            'detail': 'Missing data for required field.',
+            'source': {'pointer': '/data/attributes/f2'}
+        }
+    ]
 
 
 def test_integration_get(app, example_schema, example_model):

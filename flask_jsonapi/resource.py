@@ -55,10 +55,10 @@ class ResourceDetail(ResourceBase):
         try:
             data, errors = self.schema().dump(resource)
         except marshmallow.ValidationError as e:
-            exceptions.get_error_and_raise_exception(errors_dict=e.messages)
+            return response.JsonApiErrorResponse.from_marshmallow_errors(e.messages)
         else:
             if errors:
-                exceptions.get_error_and_raise_exception(errors_dict=errors)
+                return response.JsonApiErrorResponse.from_marshmallow_errors(errors)
             else:
                 return response.JsonApiResponse(data)
 
@@ -71,10 +71,10 @@ class ResourceDetail(ResourceBase):
         try:
             data, errors = computed_schema.load(request.get_json())
         except marshmallow.ValidationError as e:
-            exceptions.get_error_and_raise_exception(errors_dict=e.messages)
+            return response.JsonApiErrorResponse.from_marshmallow_errors(e.messages)
         else:
             if errors:
-                exceptions.get_error_and_raise_exception(errors_dict=errors)
+                return response.JsonApiErrorResponse.from_marshmallow_errors(errors)
             else:
                 resource = self.update(self.resource_id, data)
                 if resource:
@@ -109,10 +109,10 @@ class ResourceList(ResourceBase):
         try:
             objects, errors = self.schema(many=True).dump(objects_list)
         except marshmallow.ValidationError as e:
-            exceptions.get_error_and_raise_exception(errors_dict=e.messages)
+            return response.JsonApiErrorResponse.from_marshmallow_errors(e.messages)
         else:
             if errors:
-                exceptions.get_error_and_raise_exception(errors_dict=errors)
+                return response.JsonApiErrorResponse.from_marshmallow_errors(errors)
             else:
                 return response.JsonApiListResponse(
                     response_data=objects,
@@ -123,12 +123,12 @@ class ResourceList(ResourceBase):
         try:
             data, errors = self.schema().load(request.get_json())
         except marshmallow_jsonapi_exceptions.IncorrectTypeError as e:
-            exceptions.get_error_and_raise_exception(errors_dict=e.messages, title='Incorrect type error.')
+            return response.JsonApiErrorResponse.from_marshmallow_errors(e.messages)
         except marshmallow.ValidationError as e:
-            exceptions.get_error_and_raise_exception(errors_dict=e.messages)
+            return response.JsonApiErrorResponse.from_marshmallow_errors(e.messages)
         else:
             if errors:
-                exceptions.get_error_and_raise_exception(errors_dict=errors)
+                response.JsonApiErrorResponse.from_marshmallow_errors(errors)
             else:
                 object = self.create(data=data)
                 return response.JsonApiResponse(

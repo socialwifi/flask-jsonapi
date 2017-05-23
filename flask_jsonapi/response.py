@@ -65,6 +65,10 @@ class JsonApiErrorResponse(BaseJsonApiResponse):
         super().__init__(headers, status)
         self.jsonapi_errors_tuple = jsonapi_errors
 
+    @classmethod
+    def from_marshmallow_errors(cls, errors, status=http.HTTPStatus.UNPROCESSABLE_ENTITY):
+        return cls(*errors['errors'], status=status)
+
     def get_response_data(self):
         return {
             'errors': list(self.jsonapi_errors_tuple),
