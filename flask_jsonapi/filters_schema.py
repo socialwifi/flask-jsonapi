@@ -2,6 +2,8 @@ import contextlib
 
 import flask
 
+from flask_jsonapi import exceptions
+
 
 class FilterSchema:
     def __init__(self, fields: dict):
@@ -23,7 +25,10 @@ class FilterField:
     def parse(self, field_name):
         field_name = self.field_name_override or field_name
         value_string = flask.request.args['filter[{}]'.format(field_name)]
-        return self.parse_value(value_string)
+        try:
+            return self.parse_value(value_string)
+        except ValueError as e:
+            raise exceptions.InvalidFilters('Error parsing {} filter: {}'.format(field_name, e))
 
     def parse_value(self, value_string):
         return self._parse_value(value_string)
