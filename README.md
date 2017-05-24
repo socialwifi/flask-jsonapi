@@ -11,3 +11,7 @@ pip install -r base_requirements.txt
 pip install -U pytest==3.0.5
 pytest
 ```
+
+## Credits
+
+Some parts of this project were written based on [Flask-REST-JSONAPI](https://github.com/miLibris/flask-rest-jsonapi).
