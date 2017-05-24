@@ -10,6 +10,8 @@ from flask_jsonapi import api
 from flask_jsonapi import filters_schema
 from flask_jsonapi import resource
 
+JSONAPI_HEADERS = {'content-type': 'application/vnd.api+json', 'accept': 'application/vnd.api+json'}
+
 
 @pytest.fixture
 def example_schema():
@@ -46,7 +48,7 @@ def test_integration_get_list(app, example_schema, example_model):
     application_api.route(ExampleListView, 'example_list', '/examples/')
     response = app.test_client().get(
         '/examples/',
-        headers={'content-type': 'application/vnd.api+json'}
+        headers=JSONAPI_HEADERS
     )
     result = json.loads(response.data.decode())
     assert result == {
@@ -74,6 +76,48 @@ def test_integration_get_list(app, example_schema, example_model):
     }
 
 
+def test_integration_bad_accept_header(app, example_schema, example_model):
+    class ExampleListView(resource.ResourceList):
+        schema = example_schema
+
+    application_api = api.Api(app)
+    application_api.route(ExampleListView, 'example_list', '/examples/')
+    response = app.test_client().get('/examples/', headers={'accept': 'text/html'})
+    assert response.status_code == 406
+    assert json.loads(response.data.decode()) == {
+        'errors': [{
+            'detail': 'Accept header must be application/vnd.api+json',
+            'source': '',
+            'status': 406,
+            'title': 'InvalidRequestHeader'
+        }],
+        'jsonapi': {
+            'version': '1.0'
+        },
+    }
+
+
+def test_integration_bad_content_type_header(app, example_schema, example_model):
+    class ExampleListView(resource.ResourceList):
+        schema = example_schema
+
+    application_api = api.Api(app)
+    application_api.route(ExampleListView, 'example_list', '/examples/')
+    response = app.test_client().post('/examples/', headers={'accept': 'application/vnd.api+json'})
+    assert response.status_code == 415
+    assert json.loads(response.data.decode()) == {
+        'errors': [{
+            'detail': 'Content-Type header must be application/vnd.api+json',
+            'source': '',
+            'status': 415,
+            'title': 'InvalidRequestHeader'
+        }],
+        'jsonapi': {
+            'version': '1.0'
+        },
+    }
+
+
 def test_integration_get_filtered_list(app, example_schema, example_model):
     class ExampleListView(resource.ResourceList):
         schema = example_schema
@@ -96,7 +140,7 @@ def test_integration_get_filtered_list(app, example_schema, example_model):
     application_api.route(ExampleListView, 'example_list', '/examples/')
     app.test_client().get(
         '/examples/?filter[basic]=text&filter[listed]=first,second&filter[dumb-name]=another&filter[integer]=3',
-        headers={'content-type': 'application/vnd.api+json'}
+        headers=JSONAPI_HEADERS
     )
     assert ExampleListView.applied_filters == [{
         'basic': 'text',
@@ -126,7 +170,7 @@ def test_integration_create_resource(app, example_schema, example_model):
     application_api.route(ExampleListView, 'example_list', '/examples/')
     response = app.test_client().post(
         '/examples/',
-        headers={'content-type': 'application/vnd.api+json'},
+        headers=JSONAPI_HEADERS,
         data=json_data,
     )
     assert json.loads(response.data.decode()) == {
@@ -167,7 +211,7 @@ def test_integration_create_resource_invalid_input(app, example_schema, example_
     application_api.route(ExampleListView, 'example_list', '/examples/')
     response = app.test_client().post(
         '/examples/',
-        headers={'content-type': 'application/vnd.api+json'},
+        headers=JSONAPI_HEADERS,
         data=json_data,
     )
     result = json.loads(response.data.decode())
@@ -200,7 +244,7 @@ def test_integration_get(app, example_schema, example_model):
     application_api.route(ExampleDetailView, 'example_detail', '/examples/<id>/')
     response = app.test_client().get(
         '/examples/f60717a3-7dc2-4f1a-bdf4-f2804c3127a4/',
-        headers={'content-type': 'application/vnd.api+json'}
+        headers=JSONAPI_HEADERS
     )
     result = json.loads(response.data.decode())
     assert result == {
@@ -230,7 +274,7 @@ def test_integration_delete(app, example_schema, example_model):
     application_api.route(ExampleDetailView, 'example_detail', '/examples/<id>/')
     response = app.test_client().delete(
         '/examples/f60717a3-7dc2-4f1a-bdf4-f2804c3127a4/',
-        headers={'content-type': 'application/vnd.api+json'}
+        headers=JSONAPI_HEADERS
     )
     assert response.status_code == 204
     assert response.data == b''
@@ -259,7 +303,7 @@ def test_integration_patch(app, example_schema, example_model):
     application_api.route(ExampleDetailView, 'example_list', '/examples/<id>/')
     response = app.test_client().patch(
         '/examples/f60717a3-7dc2-4f1a-bdf4-f2804c3127a4/',
-        headers={'content-type': 'application/vnd.api+json'},
+        headers=JSONAPI_HEADERS,
         data=json_data,
     )
     assert json.loads(response.data.decode()) == {
@@ -297,7 +341,7 @@ def test_integration_patch_with_empty_response(app, example_schema, example_mode
     application_api.route(ExampleDetailView, 'example_list', '/examples/<id>/')
     response = app.test_client().patch(
         '/examples/f60717a3-7dc2-4f1a-bdf4-f2804c3127a4/',
-        headers={'content-type': 'application/vnd.api+json'},
+        headers=JSONAPI_HEADERS,
         data=json_data,
     )
     assert response.status_code == 204
