@@ -106,6 +106,11 @@ class ResourceList(ResourceBase):
     methods = ['GET', 'POST']
     filter_schema = filters_schema.FilterSchema({})
 
+    def __init__(self, *, filter_schema=None, **kwargs):
+        super().__init__(**kwargs)
+        if filter_schema:
+            self.filter_schema = filter_schema
+
     def get(self, *args, **kwargs):
         objects_list = self.read_many(filters=self.filter_schema.parse())
         try:
