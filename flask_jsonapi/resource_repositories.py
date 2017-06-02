@@ -24,7 +24,8 @@ class ResourceRepositoryViewSet:
         return ResourceRepositoryDetailView.as_view(view_name, **self.get_views_kwargs())
 
     def as_list_view(self, view_name):
-        return ResourceRepositoryListView.as_view(view_name, **self.get_views_kwargs())
+        return ResourceRepositoryListView.as_view(view_name, filter_schema=self.filter_schema,
+                                                  **self.get_views_kwargs())
 
     def get_views_kwargs(self):
         return {
