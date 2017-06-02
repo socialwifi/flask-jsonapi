@@ -1,3 +1,6 @@
+import re
+
+
 class Api:
     def __init__(self, app):
         self.app = app
@@ -14,3 +17,11 @@ class Api:
         view_func = resource.as_view(view, **(view_kwargs or {}))
         for url in urls:
             self.app.add_url_rule(url, view_func=view_func, **url_rule_options or dict())
+
+    def repository(self, repository, base_view_name, *urls, url_rule_options=None):
+        detail_view = repository.as_detail_view('{}_detail'.format(base_view_name))
+        list_view = repository.as_list_view('{}_list'.format(base_view_name))
+        for list_url in urls:
+            detail_url = re.sub(r'(/?)$', r'/<id>\g<1>', list_url)
+            self.app.add_url_rule(list_url, view_func=list_view, **url_rule_options or dict())
+            self.app.add_url_rule(detail_url, view_func=detail_view, **url_rule_options or dict())
