@@ -16,13 +16,13 @@ This package requires at least python 3.5. To install run `pip install flask-jso
 Run in python:
 
 ```
+import collections
+
 import flask
 import marshmallow_jsonapi
 
-from flask_jsonapi import api
+import flask_jsonapi
 from flask_jsonapi import exceptions
-from flask_jsonapi import filters_schema
-from flask_jsonapi import resources
 
 class ExampleSchema(marshmallow_jsonapi.Schema):
     id = marshmallow_jsonapi.fields.UUID()
@@ -41,7 +41,7 @@ repository = {
 
 app = flask.Flask(__name__)
 
-class ExampleListView(resources.ResourceList):
+class ExampleListView(flask_jsonapi.ResourceList):
     schema = ExampleSchema
 
     def read_many(self, filters):
@@ -55,7 +55,7 @@ class ExampleListView(resources.ResourceList):
         repository[id] = obj
         return obj
 
-class ExampleDetailView(resources.ResourceDetail):
+class ExampleDetailView(flask_jsonapi.ResourceDetail):
     schema = ExampleSchema
 
     def read(self, id):
@@ -75,7 +75,7 @@ class ExampleDetailView(resources.ResourceDetail):
         if id in repository:
             del repository[id]
 
-application_api = api.Api(app)
+application_api = flask_jsonapi.Api(app)
 application_api.route(ExampleListView, 'example_list', '/examples/')
 application_api.route(ExampleDetailView, 'example_detail', '/examples/<id>/')
 
