@@ -9,7 +9,7 @@ JSONAPI 1.0 server implementation for Flask.
 
 ## Installation
 
-This package requires at least python 3.4. To install run `pip install flask-jsonapi`
+This package requires at least python 3.5. To install run `pip install flask-jsonapi`
 
 ## Application example
 

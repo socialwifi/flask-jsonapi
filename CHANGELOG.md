@@ -1,6 +1,7 @@
 0.2.0 (unreleased)
 ------------------
 
+- Dropped python 3.4 support
 - Added ResourceRepositoryViewSet
 
 
