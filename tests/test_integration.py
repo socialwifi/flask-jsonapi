@@ -346,3 +346,30 @@ def test_integration_patch_with_empty_response(app, example_schema, example_mode
     )
     assert response.status_code == 204
     assert response.data == b''
+
+def test_creating_view_with_dynamic_schema(app, example_schema, example_model):
+    class ExampleDetailView(resource.ResourceDetail):
+
+        def read(self, id):
+            return example_model(id=id, body='Gwynbelidd')
+
+    application_api = api.Api(app)
+    application_api.route(ExampleDetailView, 'example_detail', '/examples/<id>/',
+                          view_kwargs={'schema': example_schema})
+    response = app.test_client().get(
+        '/examples/f60717a3-7dc2-4f1a-bdf4-f2804c3127a4/',
+        headers=JSONAPI_HEADERS
+    )
+    result = json.loads(response.data.decode())
+    assert result == {
+        'data': {
+            'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a4',
+            'type': 'example',
+            'attributes': {
+                'body': 'Gwynbelidd'
+            }
+        },
+        'jsonapi': {
+            'version': '1.0'
+        }
+    }

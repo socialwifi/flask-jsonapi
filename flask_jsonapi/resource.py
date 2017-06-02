@@ -7,6 +7,7 @@ from flask import views, helpers
 from marshmallow_jsonapi import exceptions as marshmallow_jsonapi_exceptions
 
 from flask_jsonapi import decorators
+from flask_jsonapi import descriptors
 from flask_jsonapi import exceptions
 from flask_jsonapi import filters_schema
 from flask_jsonapi import response
@@ -16,8 +17,13 @@ logger = logging.getLogger(__name__)
 
 
 class ResourceBase(views.View):
+    schema = descriptors.NotImplementedProperty('schema')
     args = None
     kwargs = None
+
+    def __init__(self, *, schema=None):
+        if schema:
+            self.schema = schema
 
     @classmethod
     def as_view(cls, name, *class_args, **class_kwargs):
@@ -86,10 +92,6 @@ class ResourceDetail(ResourceBase):
     def resource_id(self):
         return self.kwargs[self.id_kwarg]
 
-    @property
-    def schema(self):
-        raise NotImplementedError
-
     def read(self, id):
         raise NotImplementedError
 
@@ -135,10 +137,6 @@ class ResourceList(ResourceBase):
                     self.schema().dump(object).data,
                     status=http.HTTPStatus.CREATED,
                 )
-
-    @property
-    def schema(self):
-        raise NotImplementedError
 
     def read_many(self, filters):
         raise NotImplementedError
