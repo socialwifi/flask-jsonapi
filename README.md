@@ -22,7 +22,7 @@ import marshmallow_jsonapi
 from flask_jsonapi import api
 from flask_jsonapi import exceptions
 from flask_jsonapi import filters_schema
-from flask_jsonapi import resource
+from flask_jsonapi import resources
 
 class ExampleSchema(marshmallow_jsonapi.Schema):
     id = marshmallow_jsonapi.fields.UUID()
@@ -41,7 +41,7 @@ repository = {
 
 app = flask.Flask(__name__)
 
-class ExampleListView(resource.ResourceList):
+class ExampleListView(resources.ResourceList):
     schema = ExampleSchema
 
     def read_many(self, filters):
@@ -55,7 +55,7 @@ class ExampleListView(resource.ResourceList):
         repository[id] = obj
         return obj
 
-class ExampleDetailView(resource.ResourceDetail):
+class ExampleDetailView(resources.ResourceDetail):
     schema = ExampleSchema
 
     def read(self, id):

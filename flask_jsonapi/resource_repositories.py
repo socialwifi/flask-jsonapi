@@ -1,5 +1,5 @@
 from flask_jsonapi import descriptors
-from flask_jsonapi import resource
+from flask_jsonapi import resources
 
 
 class ResourceRepositoryViewSet:
@@ -38,7 +38,7 @@ class ResourceRepositoryViewMixin:
             self.repository = repository
 
 
-class ResourceRepositoryDetailView(ResourceRepositoryViewMixin, resource.ResourceDetail):
+class ResourceRepositoryDetailView(ResourceRepositoryViewMixin, resources.ResourceDetail):
     def read(self, id):
         return self.repository.get_detail(id)
 
@@ -50,7 +50,7 @@ class ResourceRepositoryDetailView(ResourceRepositoryViewMixin, resource.Resourc
         self.repository.update(**data)
 
 
-class ResourceRepositoryListView(ResourceRepositoryViewMixin, resource.ResourceList):
+class ResourceRepositoryListView(ResourceRepositoryViewMixin, resources.ResourceList):
     def read_many(self, filters):
         return self.repository.get_list(filters)
 
