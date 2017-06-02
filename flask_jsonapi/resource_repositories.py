@@ -8,24 +8,35 @@ class ResourceRepositoryViewSet:
     repository = descriptors.NotImplementedProperty('repository')
     schema = descriptors.NotImplementedProperty('schema')
     filter_schema = filters_schema.FilterSchema({})
+    view_decorators = ()
     view_kwargs = None
 
-    def __init__(self, *, repository=None, schema=None, filter_schema=None, view_kwargs=None):
+    def __init__(self, *, repository=None, schema=None, filter_schema=None, view_decorators=None, view_kwargs=None):
         if repository:
             self.repository = repository
         if schema:
             self.schema = schema
         if filter_schema:
             self.filter_schema = filter_schema
+        if view_decorators:
+            self.view_decorators = view_decorators
         if view_kwargs:
             self.view_kwargs = view_kwargs
 
     def as_detail_view(self, view_name):
-        return ResourceRepositoryDetailView.as_view(view_name, **self.get_views_kwargs())
+        return self.decorate(
+            ResourceRepositoryDetailView.as_view(view_name, **self.get_views_kwargs())
+        )
 
     def as_list_view(self, view_name):
-        return ResourceRepositoryListView.as_view(view_name, filter_schema=self.filter_schema,
-                                                  **self.get_views_kwargs())
+        return self.decorate(
+            ResourceRepositoryListView.as_view(view_name, filter_schema=self.filter_schema, **self.get_views_kwargs())
+        )
+
+    def decorate(self, view):
+        for decorator in self.view_decorators:
+            view = decorator(view)
+        return view
 
     def get_views_kwargs(self):
         return {
