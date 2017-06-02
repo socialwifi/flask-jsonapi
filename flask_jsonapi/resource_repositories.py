@@ -1,17 +1,22 @@
 from flask_jsonapi import descriptors
+from flask_jsonapi import filters_schema
+
 from flask_jsonapi import resources
 
 
 class ResourceRepositoryViewSet:
     repository = descriptors.NotImplementedProperty('repository')
     schema = descriptors.NotImplementedProperty('schema')
+    filter_schema = filters_schema.FilterSchema({})
     view_kwargs = None
 
-    def __init__(self, *, repository=None, schema=None, view_kwargs=None):
+    def __init__(self, *, repository=None, schema=None, filter_schema=None, view_kwargs=None):
         if repository:
             self.repository = repository
         if schema:
             self.schema = schema
+        if filter_schema:
+            self.filter_schema = filter_schema
         if view_kwargs:
             self.view_kwargs = view_kwargs
 
