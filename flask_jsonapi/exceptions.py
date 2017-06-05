@@ -88,3 +88,15 @@ class RelationNotFound(JsonApiException):
 class InvalidType(JsonApiException):
     title = "Invalid type"
     status = 409
+
+
+class NotImplementedMethod(JsonApiException):
+    title = "Method not implemented"
+    status = 501
+
+    def __init__(self, detail, **kwargs):
+        super().__init__(
+            source=None,
+            detail=detail,
+            **kwargs
+        )
