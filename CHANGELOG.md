@@ -1,4 +1,4 @@
-0.2.0 (unreleased)
+0.2.0 (2017-06-07)
 ------------------
 
 - Dropped python 3.4 support
