@@ -8,7 +8,7 @@ from marshmallow_jsonapi import fields
 
 from flask_jsonapi import api
 from flask_jsonapi import filters_schema
-from flask_jsonapi import resource
+from flask_jsonapi import resources
 
 JSONAPI_HEADERS = {'content-type': 'application/vnd.api+json', 'accept': 'application/vnd.api+json'}
 
@@ -35,7 +35,7 @@ def example_model():
 
 
 def test_integration_get_list(app, example_schema, example_model):
-    class ExampleListView(resource.ResourceList):
+    class ExampleListView(resources.ResourceList):
         schema = example_schema
 
         def read_many(self, filters):
@@ -77,7 +77,7 @@ def test_integration_get_list(app, example_schema, example_model):
 
 
 def test_integration_bad_accept_header(app, example_schema, example_model):
-    class ExampleListView(resource.ResourceList):
+    class ExampleListView(resources.ResourceList):
         schema = example_schema
 
     application_api = api.Api(app)
@@ -98,7 +98,7 @@ def test_integration_bad_accept_header(app, example_schema, example_model):
 
 
 def test_integration_bad_content_type_header(app, example_schema, example_model):
-    class ExampleListView(resource.ResourceList):
+    class ExampleListView(resources.ResourceList):
         schema = example_schema
 
     application_api = api.Api(app)
@@ -119,7 +119,7 @@ def test_integration_bad_content_type_header(app, example_schema, example_model)
 
 
 def test_integration_get_filtered_list(app, example_schema, example_model):
-    class ExampleListView(resource.ResourceList):
+    class ExampleListView(resources.ResourceList):
         schema = example_schema
         filter_schema = filters_schema.FilterSchema({
             'basic': filters_schema.FilterField(),
@@ -151,7 +151,7 @@ def test_integration_get_filtered_list(app, example_schema, example_model):
 
 
 def test_integration_create_resource(app, example_schema, example_model):
-    class ExampleListView(resource.ResourceList):
+    class ExampleListView(resources.ResourceList):
         schema = example_schema
 
         def create(self, *args, **kwargs):
@@ -196,7 +196,7 @@ def test_integration_create_resource_invalid_input(app, example_schema, example_
             type_ = 'test'
             strict = True
 
-    class ExampleListView(resource.ResourceList):
+    class ExampleListView(resources.ResourceList):
         schema = TestSchema
 
         def create(self, *args, **kwargs):
@@ -234,7 +234,7 @@ def test_integration_create_resource_invalid_input(app, example_schema, example_
 
 def test_integration_get(app, example_schema, example_model):
 
-    class ExampleDetailView(resource.ResourceDetail):
+    class ExampleDetailView(resources.ResourceDetail):
         schema = example_schema
 
         def read(self, id):
@@ -263,7 +263,7 @@ def test_integration_get(app, example_schema, example_model):
 
 def test_integration_delete(app, example_schema, example_model):
 
-    class ExampleDetailView(resource.ResourceDetail):
+    class ExampleDetailView(resources.ResourceDetail):
         schema = example_schema
         deleted_ids = []
 
@@ -283,7 +283,7 @@ def test_integration_delete(app, example_schema, example_model):
 
 def test_integration_patch(app, example_schema, example_model):
 
-    class ExampleDetailView(resource.ResourceDetail):
+    class ExampleDetailView(resources.ResourceDetail):
         schema = example_schema
 
         def update(self, id, data):
@@ -322,7 +322,7 @@ def test_integration_patch(app, example_schema, example_model):
 
 def test_integration_patch_with_empty_response(app, example_schema, example_model):
 
-    class ExampleDetailView(resource.ResourceDetail):
+    class ExampleDetailView(resources.ResourceDetail):
         schema = example_schema
 
         def update(self, id, data):
@@ -346,3 +346,30 @@ def test_integration_patch_with_empty_response(app, example_schema, example_mode
     )
     assert response.status_code == 204
     assert response.data == b''
+
+def test_creating_view_with_dynamic_schema(app, example_schema, example_model):
+    class ExampleDetailView(resources.ResourceDetail):
+
+        def read(self, id):
+            return example_model(id=id, body='Gwynbelidd')
+
+    application_api = api.Api(app)
+    application_api.route(ExampleDetailView, 'example_detail', '/examples/<id>/',
+                          view_kwargs={'schema': example_schema})
+    response = app.test_client().get(
+        '/examples/f60717a3-7dc2-4f1a-bdf4-f2804c3127a4/',
+        headers=JSONAPI_HEADERS
+    )
+    result = json.loads(response.data.decode())
+    assert result == {
+        'data': {
+            'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a4',
+            'type': 'example',
+            'attributes': {
+                'body': 'Gwynbelidd'
+            }
+        },
+        'jsonapi': {
+            'version': '1.0'
+        }
+    }

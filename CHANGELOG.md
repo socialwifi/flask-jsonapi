@@ -1,8 +1,11 @@
-0.1.1 (unreleased)
+0.2.0 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Dropped python 3.4 support
+- Added ResourceRepositoryViewSet
 
 
 0.1.0 (2017-05-31)
 ------------------
+
+- Initial release

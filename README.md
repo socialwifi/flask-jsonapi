@@ -9,20 +9,20 @@ JSONAPI 1.0 server implementation for Flask.
 
 ## Installation
 
-This package requires at least python 3.4. To install run `pip install flask-jsonapi`
+This package requires at least python 3.5. To install run `pip install flask-jsonapi`
 
 ## Application example
 
 Run in python:
 
 ```
+import collections
+
 import flask
 import marshmallow_jsonapi
 
-from flask_jsonapi import api
+import flask_jsonapi
 from flask_jsonapi import exceptions
-from flask_jsonapi import filters_schema
-from flask_jsonapi import resource
 
 class ExampleSchema(marshmallow_jsonapi.Schema):
     id = marshmallow_jsonapi.fields.UUID()
@@ -41,7 +41,7 @@ repository = {
 
 app = flask.Flask(__name__)
 
-class ExampleListView(resource.ResourceList):
+class ExampleListView(flask_jsonapi.ResourceList):
     schema = ExampleSchema
 
     def read_many(self, filters):
@@ -55,7 +55,7 @@ class ExampleListView(resource.ResourceList):
         repository[id] = obj
         return obj
 
-class ExampleDetailView(resource.ResourceDetail):
+class ExampleDetailView(flask_jsonapi.ResourceDetail):
     schema = ExampleSchema
 
     def read(self, id):
@@ -75,7 +75,7 @@ class ExampleDetailView(resource.ResourceDetail):
         if id in repository:
             del repository[id]
 
-application_api = api.Api(app)
+application_api = flask_jsonapi.Api(app)
 application_api.route(ExampleListView, 'example_list', '/examples/')
 application_api.route(ExampleDetailView, 'example_detail', '/examples/<id>/')
 
