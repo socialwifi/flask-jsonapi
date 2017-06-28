@@ -123,7 +123,6 @@ class ResourceList(ResourceBase):
             else:
                 return response.JsonApiListResponse(
                     response_data=objects,
-                    status=http.HTTPStatus.CREATED,
                 )
 
     def post(self, *args, **kwargs):

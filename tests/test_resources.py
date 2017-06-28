@@ -51,6 +51,7 @@ def test_integration_get_list(app, example_schema, example_model):
         headers=JSONAPI_HEADERS
     )
     result = json.loads(response.data.decode())
+    assert response.status_code == 200
     assert result == {
         'data': [
             {
@@ -138,10 +139,11 @@ def test_integration_get_filtered_list(app, example_schema, example_model):
 
     application_api = api.Api(app)
     application_api.route(ExampleListView, 'example_list', '/examples/')
-    app.test_client().get(
+    response = app.test_client().get(
         '/examples/?filter[basic]=text&filter[listed]=first,second&filter[dumb-name]=another&filter[integer]=3',
         headers=JSONAPI_HEADERS
     )
+    assert response.status_code == 200
     assert ExampleListView.applied_filters == [{
         'basic': 'text',
         'listed': ['first', 'second'],
@@ -247,6 +249,7 @@ def test_integration_get(app, example_schema, example_model):
         headers=JSONAPI_HEADERS
     )
     result = json.loads(response.data.decode())
+    assert response.status_code == 200
     assert result == {
         'data': {
             'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a4',

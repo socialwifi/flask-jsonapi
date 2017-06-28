@@ -1,7 +1,7 @@
 0.2.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Fix returning status code on list get.
 
 
 0.2.0 (2017-06-07)
