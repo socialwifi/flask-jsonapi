@@ -1,10 +1,12 @@
 import collections
+import functools
 import json
 
 import marshmallow_jsonapi
 from marshmallow_jsonapi import fields
 
 from flask_jsonapi import api
+from flask_jsonapi import decorators
 from flask_jsonapi import resource_repositories
 
 JSONAPI_HEADERS = {'content-type': 'application/vnd.api+json', 'accept': 'application/vnd.api+json'}
@@ -176,3 +178,64 @@ def test_integration_patch_with_empty_response(app, ):
     )
     assert response.status_code == 204
     assert response.data == b''
+
+
+def example_decorator(func):
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        return "View decorated!"
+    return wrapped
+
+
+class ExampleDecoratedResourceRepositoryViewSet(resource_repositories.ResourceRepositoryViewSet):
+    schema = ExampleSchema
+    view_decorators = (
+        decorators.selective_decorator(example_decorator, ['POST']),
+    )
+
+    def __init__(self):
+        super().__init__(repository=Repository())        
+
+
+def test_integration_selective_decorator_decorated_method(app):
+    application_api = api.Api(app)
+    application_api.repository(ExampleDecoratedResourceRepositoryViewSet(), 'example', '/examples/')
+
+    json_data = json.dumps({
+        'data': {
+            'type': 'example',
+            'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a4',
+            'attributes': {
+                'body': "Nice body.",
+            }
+        }
+    })
+    response = app.test_client().post(
+        '/examples/',
+        headers=JSONAPI_HEADERS,
+        data=json_data,
+    )
+    result = response.data.decode()
+    assert result == 'View decorated!'
+
+
+def test_integration_selective_decorator_not_decorated_method(app):
+    application_api = api.Api(app)
+    application_api.repository(ExampleDecoratedResourceRepositoryViewSet(), 'example', '/examples/')
+    response = app.test_client().get(
+        '/examples/f60717a3-7dc2-4f1a-bdf4-f2804c3127a4/',
+        headers=JSONAPI_HEADERS
+    )
+    result = json.loads(response.data.decode())
+    assert result == {
+        'data': {
+            'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a4',
+            'type': 'example',
+            'attributes': {
+                'body': 'Gwynbelidd'
+            }
+        },
+        'jsonapi': {
+            'version': '1.0'
+        }
+    }

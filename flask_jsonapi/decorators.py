@@ -25,3 +25,16 @@ def check_headers(func):
             }, status=406).make_response()
         return func(*args, **kwargs)
     return wrapped
+
+
+def selective_decorator(decorator, methods):
+    def wrap(func):
+        @functools.wraps(func)
+        def wrapped(*args, **kwargs):
+            if flask.request.method in methods:
+                return decorator(func)(*args, **kwargs)
+            else:
+                return func(*args, **kwargs)
+        return wrapped
+    return wrap
+

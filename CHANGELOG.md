@@ -1,7 +1,7 @@
 0.2.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Added `flask_jsonapi.decorators.selective_decorator` to decorate only desired HTTP methods. 
 
 
 0.2.1 (2017-06-28)
