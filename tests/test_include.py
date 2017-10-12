@@ -7,9 +7,8 @@ from unittest import mock
 import marshmallow_jsonapi
 from marshmallow_jsonapi import fields
 
-from flask_jsonapi import resource_repositories
 from flask_jsonapi import api
-
+from flask_jsonapi import resource_repositories
 
 JSONAPI_HEADERS = {'content-type': 'application/vnd.api+json', 'accept': 'application/vnd.api+json'}
 
