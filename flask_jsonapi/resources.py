@@ -1,6 +1,7 @@
 import http
 
 import marshmallow
+import flask
 from flask import logging
 from flask import request
 from flask import views, helpers
@@ -51,6 +52,18 @@ class ResourceBase(views.View):
         )
         return helpers.make_response('Method Not Allowed.', http.HTTPStatus.METHOD_NOT_ALLOWED)
 
+    def _check_include_fields(self):
+        include_parameter = flask.request.args.get('include')
+        if include_parameter:
+            include_fields = tuple(include_parameter.split(','))
+            try:
+                self.schema().check_relations(include_fields)
+            except ValueError as exc:
+                raise exceptions.InvalidInclude(detail=str(exc))
+            return include_fields
+        else:
+            return tuple()
+
 
 class ResourceDetail(ResourceBase):
     methods = ['GET', 'DELETE', 'PATCH']
@@ -58,8 +71,9 @@ class ResourceDetail(ResourceBase):
 
     def get(self, *args, **kwargs):
         resource = self.read(self.resource_id)
+        include_fields = self._check_include_fields()
         try:
-            data, errors = self.schema().dump(resource)
+            data, errors = self.schema(include_data=include_fields).dump(resource)
         except marshmallow.ValidationError as e:
             return response.JsonApiErrorResponse.from_marshmallow_errors(e.messages)
         else:
@@ -113,8 +127,9 @@ class ResourceList(ResourceBase):
 
     def get(self, *args, **kwargs):
         objects_list = self.read_many(filters=self.filter_schema.parse())
+        include_fields = self._check_include_fields()
         try:
-            objects, errors = self.schema(many=True).dump(objects_list)
+            objects, errors = self.schema(many=True, include_data=include_fields).dump(objects_list)
         except marshmallow.ValidationError as e:
             return response.JsonApiErrorResponse.from_marshmallow_errors(e.messages)
         else:
