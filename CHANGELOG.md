@@ -1,4 +1,4 @@
-0.3.1 (unreleased)
+0.4.0 (2017-10-13)
 ------------------
 
 - Added inclusion of related resources. ([specification](http://jsonapi.org/format/#fetching-includes))
