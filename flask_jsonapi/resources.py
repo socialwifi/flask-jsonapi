@@ -151,7 +151,7 @@ class ResourceList(ResourceBase):
             if errors:
                 response.JsonApiErrorResponse.from_marshmallow_errors(errors)
             else:
-                object = self.create(data=data)
+                object = self.create(data)
                 return response.JsonApiResponse(
                     self.schema().dump(object).data,
                     status=http.HTTPStatus.CREATED,
@@ -160,5 +160,5 @@ class ResourceList(ResourceBase):
     def read_many(self, filters):
         raise NotImplementedError
 
-    def create(self, data):
+    def create(self, data, **kwargs):
         raise NotImplementedError
