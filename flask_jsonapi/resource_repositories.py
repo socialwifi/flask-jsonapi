@@ -6,7 +6,7 @@ from flask_jsonapi import resources
 
 
 class BaseResourceRepository:
-    def create(self, **kwargs):
+    def create(self, data, **kwargs):
         raise exceptions.NotImplementedMethod('Creating is not implemented.')
 
     def get_list(self, filters=None):
@@ -20,7 +20,6 @@ class BaseResourceRepository:
 
     def update(self, id, **data):
         raise exceptions.NotImplementedMethod('Updating is not implemented')
-
 
 
 class ResourceRepositoryViewSet:
@@ -90,5 +89,5 @@ class ResourceRepositoryListView(ResourceRepositoryViewMixin, resources.Resource
     def read_many(self, filters):
         return self.repository.get_list(filters)
 
-    def create(self, data):
-        return self.repository.create(**data)
+    def create(self, data, **kwargs):
+        return self.repository.create(data, **kwargs)

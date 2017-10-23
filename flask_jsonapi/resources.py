@@ -160,5 +160,5 @@ class ResourceList(ResourceBase):
     def read_many(self, filters):
         raise NotImplementedError
 
-    def create(self, data):
+    def create(self, data, **kwargs):
         raise NotImplementedError
