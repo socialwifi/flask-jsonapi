@@ -19,12 +19,15 @@ logger = logging.getLogger(__name__)
 
 class ResourceBase(views.View):
     schema = descriptors.NotImplementedProperty('schema')
+    nested = False
     args = None
     kwargs = None
 
-    def __init__(self, *, schema=None):
+    def __init__(self, *, schema=None, nested=False):
         if schema:
             self.schema = schema
+        if nested:
+            self.nested = nested
 
     @classmethod
     def as_view(cls, name, *class_args, **class_kwargs):
@@ -165,3 +168,16 @@ class ResourceList(ResourceBase):
 
     def create(self, data, **kwargs):
         raise NotImplementedError
+
+
+class NestedResourceList(ResourceList):
+    def prepare_response(self, data):
+        kwargs = {}
+        if self.nested:
+            id_map = {}
+            kwargs = {'id_map': id_map}
+        object = self.create(data=data, **kwargs)
+        return response.JsonApiResponse(
+            self.schema().dump(object, **kwargs).data,
+            status=http.HTTPStatus.CREATED,
+        )
