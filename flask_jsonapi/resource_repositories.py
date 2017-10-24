@@ -1,6 +1,7 @@
 from flask_jsonapi import descriptors
 from flask_jsonapi import exceptions
 from flask_jsonapi import filters_schema
+from flask_jsonapi import nested_repository
 
 from flask_jsonapi import resources
 
@@ -28,8 +29,9 @@ class ResourceRepositoryViewSet:
     filter_schema = filters_schema.FilterSchema({})
     view_decorators = ()
     view_kwargs = None
+    nested = False
 
-    def __init__(self, *, repository=None, schema=None, filter_schema=None, view_decorators=None, view_kwargs=None):
+    def __init__(self, *, repository=None, schema=None, filter_schema=None, view_decorators=None, view_kwargs=None, nested=False):
         if repository:
             self.repository = repository
         if schema:
@@ -40,6 +42,10 @@ class ResourceRepositoryViewSet:
             self.view_decorators = view_decorators
         if view_kwargs:
             self.view_kwargs = view_kwargs
+        if nested:
+            self.nested = nested
+        if self.nested:
+            self.repository = self.extend_repository()
 
     def as_detail_view(self, view_name):
         return self.decorate(
@@ -47,8 +53,9 @@ class ResourceRepositoryViewSet:
         )
 
     def as_list_view(self, view_name):
+        cls = NestedResourceRepositoryListView if self.nested else ResourceRepositoryListView
         return self.decorate(
-            ResourceRepositoryListView.as_view(view_name, filter_schema=self.filter_schema, **self.get_views_kwargs())
+            cls.as_view(view_name, filter_schema=self.filter_schema, **self.get_views_kwargs())
         )
 
     def decorate(self, view):
@@ -60,8 +67,12 @@ class ResourceRepositoryViewSet:
         return {
             'schema': self.schema,
             'repository': self.repository,
+            'nested': self.nested,
             **(self.view_kwargs or {})
         }
+
+    def extend_repository(self):
+        return nested_repository.NestedRepository(repository=self.repository)
 
 
 class ResourceRepositoryViewMixin:
@@ -86,6 +97,14 @@ class ResourceRepositoryDetailView(ResourceRepositoryViewMixin, resources.Resour
 
 
 class ResourceRepositoryListView(ResourceRepositoryViewMixin, resources.ResourceList):
+    def read_many(self, filters):
+        return self.repository.get_list(filters)
+
+    def create(self, data, **kwargs):
+        return self.repository.create(data, **kwargs)
+
+
+class NestedResourceRepositoryListView(ResourceRepositoryViewMixin, resources.NestedResourceList):
     def read_many(self, filters):
         return self.repository.get_list(filters)
 
