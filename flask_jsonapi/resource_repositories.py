@@ -1,6 +1,7 @@
 from flask_jsonapi import descriptors
 from flask_jsonapi import exceptions
 from flask_jsonapi import filters_schema
+from flask_jsonapi import nested_repository
 
 from flask_jsonapi import resources
 
@@ -28,8 +29,9 @@ class ResourceRepositoryViewSet:
     filter_schema = filters_schema.FilterSchema({})
     view_decorators = ()
     view_kwargs = None
+    nested = False
 
-    def __init__(self, *, repository=None, schema=None, filter_schema=None, view_decorators=None, view_kwargs=None):
+    def __init__(self, *, repository=None, schema=None, filter_schema=None, view_decorators=None, view_kwargs=None, nested=False):
         if repository:
             self.repository = repository
         if schema:
@@ -40,6 +42,10 @@ class ResourceRepositoryViewSet:
             self.view_decorators = view_decorators
         if view_kwargs:
             self.view_kwargs = view_kwargs
+        if nested:
+            self.nested = nested
+        if self.nested:
+            self.extend_repository()
 
     def as_detail_view(self, view_name):
         return self.decorate(
@@ -60,8 +66,12 @@ class ResourceRepositoryViewSet:
         return {
             'schema': self.schema,
             'repository': self.repository,
+            'nested': self.nested,
             **(self.view_kwargs or {})
         }
+
+    def extend_repository(self):
+        self.repository = nested_repository.NestedRepository(repository=self.repository)
 
 
 class ResourceRepositoryViewMixin:
