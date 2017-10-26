@@ -60,7 +60,8 @@ def test_get_parent_detail_with_include_data(app):
         '/parents/f60717a3-7dc2-4f1a-bdf4-f2804c3127a4/?include=children',
         headers=JSONAPI_HEADERS
     )
-    result = json.loads(response.data.decode())
+    result = json.loads(response.data.decode('utf-8'))
+    result['included'].sort(key=lambda x: x['attributes']['name'])
     expected = {
        'data': {
           'attributes': {
@@ -84,20 +85,20 @@ def test_get_parent_detail_with_include_data(app):
           'type': 'parents'
        },
        'included': [
-          {
-             'attributes': {
-                'name': 'Cain'
-             },
-             'id': mock.ANY,
-             'type': 'childs'
-          },
-          {
-             'attributes': {
-                'name': 'Abel'
-             },
-             'id': mock.ANY,
-             'type': 'childs'
-          }
+           {
+               'attributes': {
+                   'name': 'Abel'
+               },
+               'id': mock.ANY,
+               'type': 'childs'
+           },
+           {
+               'attributes': {
+                   'name': 'Cain'
+               },
+               'id': mock.ANY,
+               'type': 'childs'
+           },
        ],
        'jsonapi': {
           'version': '1.0'
