@@ -5,7 +5,7 @@ from setuptools import find_packages
 
 setup(
     name='flask-jsonapi',
-    version='0.5.0',
+    version='0.5.1.dev0',
     description='JSONAPI 1.0 implementation for Flask.',
     author='SocialWifi',
     author_email='it@socialwifi.com',
