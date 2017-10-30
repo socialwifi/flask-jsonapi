@@ -31,8 +31,8 @@ class Repository:
     def __init__(self):
         self.deleted_ids = []
 
-    def create(self, **kwargs):
-        return ExampleModel(**kwargs)
+    def create(self, data, **kwargs):
+        return ExampleModel(**data)
 
     def get_list(self, filters=None):
         return [

@@ -1,7 +1,7 @@
 0.4.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Added creating many objects in one request.
 
 
 0.4.0 (2017-10-13)
