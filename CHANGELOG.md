@@ -1,4 +1,4 @@
-0.4.1 (unreleased)
+0.5.0 (2017-10-30)
 ------------------
 
 - Added creating many objects in one request.
