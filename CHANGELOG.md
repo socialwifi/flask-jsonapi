@@ -1,4 +1,4 @@
-0.5.1 (unreleased)
+0.5.1 (2017-11-02)
 ------------------
 
 - Fixed getting nested resources.
