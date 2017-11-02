@@ -83,6 +83,9 @@ class ParentRepository:
         database_simulation[data['id']] = obj
         return obj
 
+    def get_list(self, filters=None):
+        return database_simulation.values()
+
 
 class ParentResourceRepositoryViewSet(resource_repositories.ResourceRepositoryViewSet):
     schema = ParentSchema
@@ -143,5 +146,23 @@ def test_integration_create_nested_resource(app):
             }
         },
         "jsonapi": {"version": "1.0"}
+    }
+    assert expected == result
+
+
+def test_integration_get_nested_resource(app):
+    database_simulation.clear()
+    application_api = api.Api(app)
+    application_api.repository(ParentResourceRepositoryViewSet(), 'parent', '/parents/')
+
+    response = app.test_client().get(
+        '/parents/',
+        headers=JSONAPI_HEADERS,
+    )
+    result = json.loads(response.data.decode('utf-8'))
+    expected = {
+        "data": [],
+        "meta": {"count": 0},
+        "jsonapi": {"version": "1.0"},
     }
     assert expected == result
