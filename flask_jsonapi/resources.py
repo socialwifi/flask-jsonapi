@@ -23,11 +23,13 @@ class ResourceBase(views.View):
     args = None
     kwargs = None
 
-    def __init__(self, *, schema=None, nested=False):
+    def __init__(self, *, schema=None, nested=False, atomic_schema=None):
         if schema:
             self.schema = schema
         if nested:
             self.nested = nested
+        if atomic_schema:
+            self.atomic_schema = atomic_schema
 
     @classmethod
     def as_view(cls, name, *class_args, **class_kwargs):
