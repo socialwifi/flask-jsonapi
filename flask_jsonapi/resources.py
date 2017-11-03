@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import http
 
 import flask
@@ -23,11 +24,13 @@ class ResourceBase(views.View):
     args = None
     kwargs = None
 
-    def __init__(self, *, schema=None, nested=False):
+    def __init__(self, *, schema=None, nested=False, atomic_schema=None):
         if schema:
             self.schema = schema
         if nested:
             self.nested = nested
+        if atomic_schema:
+            self.atomic_schema = atomic_schema
 
     @classmethod
     def as_view(cls, name, *class_args, **class_kwargs):
@@ -171,6 +174,19 @@ class ResourceList(ResourceBase):
 
 
 class NestedResourceList(ResourceList):
+    def post(self, *args, **kwargs):
+        with self.replace_schema():
+            response = super().post(*args, **kwargs)
+        return response
+    
+    @contextmanager
+    def replace_schema(self):
+        if self.atomic_schema:
+            schema = self.schema
+            self.schema = self.atomic_schema
+            yield
+            self.schema = schema
+
     def prepare_response(self, data):
         kwargs = {}
         if self.nested:

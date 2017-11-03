@@ -30,8 +30,10 @@ class ResourceRepositoryViewSet:
     view_decorators = ()
     view_kwargs = None
     nested = False
+    atomic_schema = None
 
-    def __init__(self, *, repository=None, schema=None, filter_schema=None, view_decorators=None, view_kwargs=None, nested=False):
+    def __init__(self, *, repository=None, schema=None, filter_schema=None,
+                 view_decorators=None, view_kwargs=None, nested=False, atomic_schema=None):
         if repository:
             self.repository = repository
         if schema:
@@ -44,6 +46,8 @@ class ResourceRepositoryViewSet:
             self.view_kwargs = view_kwargs
         if nested:
             self.nested = nested
+        if atomic_schema:
+            self.atomic_schema = atomic_schema
         if self.nested:
             self.repository = self.extend_repository()
 
@@ -68,6 +72,7 @@ class ResourceRepositoryViewSet:
             'schema': self.schema,
             'repository': self.repository,
             'nested': self.nested,
+            'atomic_schema': self.atomic_schema,
             **(self.view_kwargs or {})
         }
 
