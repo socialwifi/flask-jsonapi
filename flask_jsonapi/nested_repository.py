@@ -18,7 +18,8 @@ class NestedRepository:
 
     def create(self, data, **kwargs):
         if self.structure_has_nested_object(data):
-            return self.create_model_with_children(data, **kwargs)
+            with self.repository.begin_transaction():
+                return self.create_model_with_children(data, **kwargs)
         else:
             return self.repository.create(data, **kwargs)
 

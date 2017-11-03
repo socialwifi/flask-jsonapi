@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+
 from flask_jsonapi import descriptors
 from flask_jsonapi import exceptions
 from flask_jsonapi import filters_schema
@@ -21,6 +23,10 @@ class BaseResourceRepository:
 
     def update(self, id, **data):
         raise exceptions.NotImplementedMethod('Updating is not implemented')
+
+    @contextmanager
+    def begin_transaction(self):
+        yield
 
 
 class ResourceRepositoryViewSet:
