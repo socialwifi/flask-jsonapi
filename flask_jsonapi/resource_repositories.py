@@ -29,9 +29,10 @@ class ResourceRepositoryViewSet:
     filter_schema = filters_schema.FilterSchema({})
     view_decorators = ()
     view_kwargs = None
-    nested = False
+    nested_schema = None
 
-    def __init__(self, *, repository=None, schema=None, filter_schema=None, view_decorators=None, view_kwargs=None, nested=False):
+    def __init__(self, *, repository=None, schema=None, filter_schema=None,
+                 view_decorators=None, view_kwargs=None, nested_schema=None):
         if repository:
             self.repository = repository
         if schema:
@@ -42,9 +43,9 @@ class ResourceRepositoryViewSet:
             self.view_decorators = view_decorators
         if view_kwargs:
             self.view_kwargs = view_kwargs
-        if nested:
-            self.nested = nested
-        if self.nested:
+        if nested_schema:
+            self.nested = nested_schema
+        if self.nested_schema:
             self.repository = self.extend_repository()
 
     def as_detail_view(self, view_name):
@@ -53,7 +54,7 @@ class ResourceRepositoryViewSet:
         )
 
     def as_list_view(self, view_name):
-        cls = NestedResourceRepositoryListView if self.nested else ResourceRepositoryListView
+        cls = NestedResourceRepositoryListView if self.nested_schema else ResourceRepositoryListView
         return self.decorate(
             cls.as_view(view_name, filter_schema=self.filter_schema, **self.get_views_kwargs())
         )
@@ -64,12 +65,16 @@ class ResourceRepositoryViewSet:
         return view
 
     def get_views_kwargs(self):
-        return {
+        kwargs = {
             'schema': self.schema,
             'repository': self.repository,
-            'nested': self.nested,
             **(self.view_kwargs or {})
         }
+        if self.nested_schema:
+            kwargs.update({
+                'nested_schema': self.nested_schema,
+            })
+        return kwargs
 
     def extend_repository(self):
         return nested_repository.NestedRepository(repository=self.repository)
