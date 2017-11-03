@@ -18,7 +18,8 @@ class NestedRepository:
 
     def create(self, data, **kwargs):
         if self.structure_has_nested_object(data):
-            return self.create_model_with_children(data, **kwargs)
+            with self.transaction_begin():
+                return self.create_model_with_children(data, **kwargs)
         else:
             return self.repository.create(data, **kwargs)
 
@@ -33,6 +34,14 @@ class NestedRepository:
 
     def update(self, id, **data):
         return self.repository.update(id, **data)
+
+    @contextmanager
+    def transaction_begin(self, **kwargs):
+        if hasattr(self.repository, 'transaction_begin') and callable(getattr(self.repository, 'transaction_begin')):
+            with self.repository.transaction_begin():
+                yield
+        else:
+            yield
 
     def create_model_with_children(self, data, **kwargs):
         model_dict = self.get_model_dict(data)

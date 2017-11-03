@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from unittest import mock
 
 import pytest
@@ -114,4 +115,34 @@ class TestCreatingChildrenModels:
         }
         child_repositorium_object.create.assert_called_with(expected_parametes, **kwargs)
 
+
+class RepositoryWithBeginTransaction:
+    children_repositories = {}
+    very_important_test_value = 0
+
+    @contextmanager
+    def transaction_begin(self):
+        self.very_important_test_value = 999
+        yield
+        self.very_important_test_value = 0
+
+
+class RepositoryWithOutBeginTransaction:
+    children_repositories = {}
+    very_important_test_value = 0
+
+
+class TestTransaction:
+    def test_if_function_works_in_repository_begin_transaction_if_it_exist(self):
+        repo_with_begin_transaction = RepositoryWithBeginTransaction()
+        nested_repo = nested_repository.NestedRepository(repo_with_begin_transaction)
+        with nested_repo.transaction_begin():
+            assert repo_with_begin_transaction.very_important_test_value == 999
+        assert repo_with_begin_transaction.very_important_test_value == 0
+
+    def test_if_function_works_without_transaction_if_it_not_exist_in_repo(self):
+        repo_with_out_begin_transaction = RepositoryWithOutBeginTransaction()
+        nested_repo = nested_repository.NestedRepository(repo_with_out_begin_transaction)
+        with nested_repo.transaction_begin():
+            assert repo_with_out_begin_transaction.very_important_test_value == 0
 
