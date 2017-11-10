@@ -2,7 +2,7 @@ from unittest import mock
 
 import pytest
 
-from flask_jsonapi import nested_repository
+from flask_jsonapi.nested import nested_repository
 
 
 class Repository:

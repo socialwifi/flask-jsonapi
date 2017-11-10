@@ -1,7 +1,8 @@
+import flask_jsonapi.nested.nested_resources
 from flask_jsonapi import descriptors
 from flask_jsonapi import resource_repositories
-from flask_jsonapi import nested_repository
 from flask_jsonapi import resources
+from flask_jsonapi.nested import nested_repository
 
 
 class NestedResourceRepositoryViewSet(resource_repositories.ResourceRepositoryViewSet):
@@ -29,7 +30,8 @@ class NestedResourceRepositoryViewSet(resource_repositories.ResourceRepositoryVi
         return kwargs
 
 
-class NestedResourceRepositoryListView(resource_repositories.ResourceRepositoryViewMixin, resources.NestedResourceList):
+class NestedResourceRepositoryListView(resource_repositories.ResourceRepositoryViewMixin,
+                                       flask_jsonapi.nested.nested_resources.NestedResourceList):
     def read_many(self, filters):
         return self.repository.get_list(filters)
 
