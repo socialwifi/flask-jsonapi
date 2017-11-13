@@ -3,8 +3,6 @@ from contextlib import contextmanager
 from flask_jsonapi import descriptors
 from flask_jsonapi import exceptions
 from flask_jsonapi import filters_schema
-from flask_jsonapi import nested_repository
-
 from flask_jsonapi import resources
 
 
