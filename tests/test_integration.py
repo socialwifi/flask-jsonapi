@@ -1,16 +1,14 @@
-import collections
 import json
-import uuid
 
 from marshmallow_jsonapi import Schema
 from marshmallow_jsonapi import fields
 
 from flask_jsonapi import api
 from flask_jsonapi import resource_repositories
-from flask_jsonapi.nested_repository import ChildRepository
-from flask_jsonapi.marshmallow_nested_extension.schema import IdMappingSchema
 from flask_jsonapi.marshmallow_nested_extension.field import CompleteNestedRelationship
-
+from flask_jsonapi.marshmallow_nested_extension.schema import IdMappingSchema
+from flask_jsonapi.nested import nested_resource_repositories
+from flask_jsonapi.nested.nested_repository import ChildRepository
 
 JSONAPI_HEADERS = {'content-type': 'application/vnd.api+json', 'accept': 'application/vnd.api+json'}
 
@@ -27,14 +25,8 @@ class DescendantSchema(IdMappingSchema, Schema):
         strict = True
 
 
-class ParentSchema(IdMappingSchema, Schema):
+class ParentSchema(Schema):
     id = fields.Str(required=True)
-    descendant = CompleteNestedRelationship(
-        schema=DescendantSchema,
-        attribute='descendant',
-        many=True, include_resource_linkage=True,
-        type_='descendant'
-    )
 
     class Meta:
         type_ = 'parent'
@@ -42,6 +34,15 @@ class ParentSchema(IdMappingSchema, Schema):
         self_view = 'parent_detail'
         self_view_kwargs = {'parent_id': '<id>'}
         strict = True
+
+
+class ParentSchemaAtomic(IdMappingSchema, ParentSchema):
+    descendant = CompleteNestedRelationship(
+        schema=DescendantSchema,
+        attribute='descendant',
+        many=True, include_resource_linkage=True,
+        type_='descendant'
+    )
 
 
 class DescendantModel:
@@ -87,9 +88,9 @@ class ParentRepository(resource_repositories.BaseResourceRepository):
         return database_simulation.values()
 
 
-class ParentResourceRepositoryViewSet(resource_repositories.ResourceRepositoryViewSet):
+class ParentResourceRepositoryViewSet(nested_resource_repositories.NestedResourceRepositoryViewSet):
     schema = ParentSchema
-    nested = True
+    nested_schema = ParentSchemaAtomic
 
     def __init__(self):
         super().__init__(repository=ParentRepository())
@@ -148,6 +149,29 @@ def test_integration_create_nested_resource(app):
         "jsonapi": {"version": "1.0"}
     }
     assert expected == result
+
+
+def test_integration_get_list_use_schema_instead_of_atomic_schema(app):
+    database_simulation.clear()
+    application_api = api.Api(app)
+    application_api.repository(ParentResourceRepositoryViewSet(), 'parent', '/parents/')
+    parent = ParentModel(**{'id': 111})
+    database_simulation[parent.id] = parent
+    response = app.test_client().get(
+        '/parents/',
+        headers=JSONAPI_HEADERS,
+    )
+    result = json.loads(response.data.decode('utf-8'))
+    expected = {
+        'meta': {'count': 1},
+        'data': [
+            {
+                'id': '111',
+                'type': 'parent'
+            }
+        ],
+        'jsonapi': {'version': '1.0'}
+    }
 
 
 def test_integration_get_nested_resource(app):
