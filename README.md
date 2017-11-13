@@ -15,7 +15,7 @@ This package requires at least python 3.5. To install run `pip install flask-jso
 
 Run in python:
 
-```
+```python
 import collections
 
 import flask
@@ -82,7 +82,7 @@ application_api.route(ExampleDetailView, 'example_detail', '/examples/<id>/')
 app.run(host='127.0.0.1', port=5000)
 ```
 And test it:
-```
+```bash
 $ curl -H 'Content-Type: application/vnd.api+json' \
     http://localhost:5000/examples/ \
     --data '{"data": {"attributes": {"body": "time"}, "type": "example"}}' 2>/dev/null | python -m json.tool
@@ -98,7 +98,7 @@ $ curl -H 'Content-Type: application/vnd.api+json' \
         "version": "1.0"
     }
 }
-$ curl http://localhost:5000/examples/ 2>/dev/null|python -m json.tool
+$ curl http://localhost:5000/examples/ 2>/dev/null | python -m json.tool
 {
     "data": [
         {
@@ -133,7 +133,7 @@ $ curl http://localhost:5000/examples/ 2>/dev/null|python -m json.tool
 ```
 ## Running tests
 
-```
+```bash
 virtualenv -p python3.6 ~/flask-jsonapi-virtualenv
 . ~/flask-jsonapi-virtualenv/bin/activate
 pip install -r base_requirements.txt
