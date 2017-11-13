@@ -1,7 +1,9 @@
-0.5.2 (unreleased)
+0.6.0 (2017-11-13)
 ------------------
 
-- Nothing changed yet.
+- Refactored nested configuration.
+- Create nested objects in transaction (if supported by the reposistory).
+- Made overriding view classes in viewsets easier.
 
 
 0.5.1 (2017-11-02)
