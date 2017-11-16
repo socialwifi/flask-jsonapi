@@ -6,7 +6,7 @@ from flask_jsonapi import filters_schema
 from flask_jsonapi import resources
 
 
-class BaseResourceRepository:
+class ResourceRepository:
     def create(self, data, **kwargs):
         raise exceptions.NotImplementedMethod('Creating is not implemented.')
 
@@ -28,7 +28,7 @@ class BaseResourceRepository:
 
 
 class ResourceRepositoryViewMixin:
-    repository = BaseResourceRepository()
+    repository = ResourceRepository()
 
     def __init__(self, *, repository=None, **kwargs):
         super().__init__(**kwargs)
@@ -57,7 +57,7 @@ class ResourceRepositoryListView(ResourceRepositoryViewMixin, resources.Resource
 
 
 class ResourceRepositoryViewSet:
-    repository = BaseResourceRepository()
+    repository = ResourceRepository()
     schema = descriptors.NotImplementedProperty('schema')
     filter_schema = filters_schema.FilterSchema({})
     detail_view_cls = ResourceRepositoryDetailView

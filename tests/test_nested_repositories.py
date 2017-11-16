@@ -117,7 +117,7 @@ class TestCreatingChildrenModels:
         child_repositorium_object.create.assert_called_with(expected_parametes, **kwargs)
 
 
-class RepositoryWithBeginTransaction(resource_repositories.BaseResourceRepository):
+class RepositoryWithBeginTransaction(resource_repositories.ResourceRepository):
     children_repositories = {}
     very_important_test_value = 0
 
@@ -128,7 +128,7 @@ class RepositoryWithBeginTransaction(resource_repositories.BaseResourceRepositor
         self.very_important_test_value = 0
 
 
-class RepositoryWithOutBeginTransaction(resource_repositories.BaseResourceRepository):
+class RepositoryWithOutBeginTransaction(resource_repositories.ResourceRepository):
     children_repositories = {}
     very_important_test_value = 0
 

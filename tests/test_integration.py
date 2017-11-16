@@ -60,7 +60,7 @@ class ParentModel:
 database_simulation = {}
 
 
-class DescendantRepository(resource_repositories.BaseResourceRepository):
+class DescendantRepository(resource_repositories.ResourceRepository):
     def create(self, data, **kwargs):
         descendant = DescendantModel(**data)
         self._add_descendant_object_to_parent(data, descendant)
@@ -71,7 +71,7 @@ class DescendantRepository(resource_repositories.BaseResourceRepository):
         setattr(parent, 'descendant', [descendant])
 
 
-class ParentRepository(resource_repositories.BaseResourceRepository):
+class ParentRepository(resource_repositories.ResourceRepository):
     children_repositories = {
         'descendant': ChildRepository(
             repository=DescendantRepository(),
