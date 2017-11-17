@@ -100,3 +100,24 @@ class NotImplementedMethod(JsonApiException):
             detail=detail,
             **kwargs
         )
+
+
+class ForbiddenError(JsonApiException):
+    title = 'Operation forbidden.'
+    status = 403
+
+    def __init__(self, detail, source=None):
+        self.source = source or {}
+        self.detail = detail
+
+
+class AttributeValidationError(JsonApiException):
+    title = 'Attribute error'
+    status = 422
+
+    def __init__(self, detail, source=None, attribute=None):
+        if source or attribute:
+            self.source = source or {'pointer': 'data/attributes/{}'.format(attribute)}
+        else:
+            self.source = {}
+        self.detail = detail

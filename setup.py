@@ -14,6 +14,9 @@ setup(
     install_requires=[str(ir.req) for ir in parse_requirements('base_requirements.txt', session=False)],
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
+    extras_require={
+        'sqlalchemy': ['sqlalchemy']
+    },
     license='BSD',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
