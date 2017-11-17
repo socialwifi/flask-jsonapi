@@ -3,6 +3,7 @@ import json
 from marshmallow_jsonapi import Schema
 from marshmallow_jsonapi import fields
 
+import flask_jsonapi.resource_repositories.resource_repository
 from flask_jsonapi import api
 from flask_jsonapi import resource_repository_views
 from flask_jsonapi.marshmallow_nested_extension.field import CompleteNestedRelationship
@@ -60,7 +61,7 @@ class ParentModel:
 database_simulation = {}
 
 
-class DescendantRepository(resource_repository_views.ResourceRepository):
+class DescendantRepository(flask_jsonapi.resource_repositories.resource_repository.ResourceRepository):
     def create(self, data, **kwargs):
         descendant = DescendantModel(**data)
         self._add_descendant_object_to_parent(data, descendant)
@@ -71,7 +72,7 @@ class DescendantRepository(resource_repository_views.ResourceRepository):
         setattr(parent, 'descendant', [descendant])
 
 
-class ParentRepository(resource_repository_views.ResourceRepository):
+class ParentRepository(flask_jsonapi.resource_repositories.resource_repository.ResourceRepository):
     children_repositories = {
         'descendant': ChildRepository(
             repository=DescendantRepository(),

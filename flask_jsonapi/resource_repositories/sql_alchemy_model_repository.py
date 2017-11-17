@@ -3,7 +3,7 @@ import logging
 from sqlalchemy import exc
 from sqlalchemy.orm import exc as orm_exc
 
-from flask_jsonapi import ResourceRepository
+from flask_jsonapi.resource_repositories.resource_repository import ResourceRepository
 from flask_jsonapi import exceptions
 from flask_jsonapi.exceptions import ForbiddenError
 from flask_jsonapi.resource_repositories import logger
