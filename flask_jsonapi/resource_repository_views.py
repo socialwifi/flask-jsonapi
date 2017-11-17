@@ -1,34 +1,11 @@
-from contextlib import contextmanager
-
 from flask_jsonapi import descriptors
-from flask_jsonapi import exceptions
 from flask_jsonapi import filters_schema
 from flask_jsonapi import resources
-
-
-class ResourceRepository:
-    def create(self, data, **kwargs):
-        raise exceptions.NotImplementedMethod('Creating is not implemented.')
-
-    def get_list(self, filters=None):
-        raise exceptions.NotImplementedMethod('Getting list is not implemented.')
-
-    def get_detail(self, id):
-        raise exceptions.NotImplementedMethod('Getting object is not implemented.')
-
-    def delete(self, id):
-        raise exceptions.NotImplementedMethod('Deleting is not implemented')
-
-    def update(self, id, **data):
-        raise exceptions.NotImplementedMethod('Updating is not implemented')
-
-    @contextmanager
-    def begin_transaction(self):
-        yield
+from flask_jsonapi.resource_repositories import repositories
 
 
 class ResourceRepositoryViewMixin:
-    repository = ResourceRepository()
+    repository = repositories.ResourceRepository()
 
     def __init__(self, *, repository=None, **kwargs):
         super().__init__(**kwargs)
@@ -57,7 +34,7 @@ class ResourceRepositoryListView(ResourceRepositoryViewMixin, resources.Resource
 
 
 class ResourceRepositoryViewSet:
-    repository = ResourceRepository()
+    repository = repositories.ResourceRepository()
     schema = descriptors.NotImplementedProperty('schema')
     filter_schema = filters_schema.FilterSchema({})
     detail_view_cls = ResourceRepositoryDetailView

@@ -4,13 +4,13 @@ from sqlalchemy import exc
 from sqlalchemy.orm import exc as orm_exc
 
 from flask_jsonapi import exceptions
-from flask_jsonapi import resource_repository_views
+from flask_jsonapi.resource_repositories import repositories
 from flask_jsonapi.exceptions import ForbiddenError
 
 logger = logging.getLogger(__name__)
 
 
-class SqlAlchemyModelRepository(resource_repository_views.ResourceRepository):
+class SqlAlchemyModelRepository(repositories.ResourceRepository):
     model = None
     session = None
     instance_name = 'model instance'
