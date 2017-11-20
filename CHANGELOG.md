@@ -1,7 +1,7 @@
 0.6.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Added SQLAlchemy repository implementation.
 
 
 0.6.0 (2017-11-13)

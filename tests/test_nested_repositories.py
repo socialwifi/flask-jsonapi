@@ -3,7 +3,8 @@ from unittest import mock
 
 import pytest
 
-from flask_jsonapi import resource_repositories
+from flask_jsonapi.resource_repositories import repositories
+from flask_jsonapi import resource_repository_views
 from flask_jsonapi.nested import nested_repository
 
 
@@ -117,7 +118,7 @@ class TestCreatingChildrenModels:
         child_repositorium_object.create.assert_called_with(expected_parametes, **kwargs)
 
 
-class RepositoryWithBeginTransaction(resource_repositories.BaseResourceRepository):
+class RepositoryWithBeginTransaction(repositories.ResourceRepository):
     children_repositories = {}
     very_important_test_value = 0
 
@@ -128,7 +129,7 @@ class RepositoryWithBeginTransaction(resource_repositories.BaseResourceRepositor
         self.very_important_test_value = 0
 
 
-class RepositoryWithOutBeginTransaction(resource_repositories.BaseResourceRepository):
+class RepositoryWithOutBeginTransaction(repositories.ResourceRepository):
     children_repositories = {}
     very_important_test_value = 0
 

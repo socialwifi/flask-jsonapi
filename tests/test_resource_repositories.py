@@ -7,7 +7,7 @@ from marshmallow_jsonapi import fields
 
 from flask_jsonapi import api
 from flask_jsonapi import decorators
-from flask_jsonapi import resource_repositories
+from flask_jsonapi import resource_repository_views
 
 JSONAPI_HEADERS = {'content-type': 'application/vnd.api+json', 'accept': 'application/vnd.api+json'}
 
@@ -50,7 +50,7 @@ class Repository:
         pass
 
 
-class ExampleResourceRepositoryViewSet(resource_repositories.ResourceRepositoryViewSet):
+class ExampleResourceRepositoryViewSet(resource_repository_views.ResourceRepositoryViewSet):
     schema = ExampleSchema
 
     def __init__(self):
@@ -187,7 +187,7 @@ def example_decorator(func):
     return wrapped
 
 
-class ExampleDecoratedResourceRepositoryViewSet(resource_repositories.ResourceRepositoryViewSet):
+class ExampleDecoratedResourceRepositoryViewSet(resource_repository_views.ResourceRepositoryViewSet):
     schema = ExampleSchema
     view_decorators = (
         decorators.selective_decorator(example_decorator, ['POST']),
