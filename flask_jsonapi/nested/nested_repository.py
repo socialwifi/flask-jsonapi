@@ -42,7 +42,7 @@ class NestedRepository:
         return model
 
     def structure_has_nested_object(self, data):
-        return all(child_field in data.keys() for child_field in self.children_repositories.keys())
+        return any(child_field in data.keys() for child_field in self.children_repositories.keys())
 
     def get_model_dict(self, dict_with_nested_object):
         model_dict = dict_with_nested_object.copy()

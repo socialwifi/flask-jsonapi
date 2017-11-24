@@ -44,7 +44,7 @@ class TestRecognisingNestedObjects:
         has_nested_objects = nested_repo.structure_has_nested_object(data)
         assert has_nested_objects is False
 
-    def test_if_model_recognised_that_request_has_not_all_nested_objects(self):
+    def test_if_model_recognised_that_request_has_not_any_nested_objects(self):
         nested_repo = nested_repository.NestedRepository(mock.Mock())
         nested_repo.children_repositories = {
             'children1': mock.Mock(),
@@ -55,7 +55,7 @@ class TestRecognisingNestedObjects:
             'children1': [{}]
         }
         has_nested_objects = nested_repo.structure_has_nested_object(data)
-        assert has_nested_objects is False
+        assert has_nested_objects is True
 
 
 class TestParsingModelDict:
