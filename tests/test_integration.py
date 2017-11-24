@@ -38,9 +38,9 @@ class ParentSchema(Schema):
 
 
 class ParentSchemaAtomic(IdMappingSchema, ParentSchema):
-    descendant = CompleteNestedRelationship(
+    descendants = CompleteNestedRelationship(
         schema=DescendantSchema,
-        attribute='descendant',
+        attribute='descendants',
         many=True, include_resource_linkage=True,
         type_='descendant'
     )
@@ -69,12 +69,12 @@ class DescendantRepository(repositories.ResourceRepository):
 
     def _add_descendant_object_to_parent(self, data, descendant):
         parent = database_simulation[data['parent_id']]
-        setattr(parent, 'descendant', [descendant])
+        setattr(parent, 'descendants', [descendant])
 
 
 class ParentRepository(repositories.ResourceRepository):
     children_repositories = {
-        'descendant': ChildRepository(
+        'descendants': ChildRepository(
             repository=DescendantRepository(),
             foreign_parent_name='parent_id'
         )
@@ -106,7 +106,7 @@ def test_integration_create_nested_resource(app):
             'type': 'parent',
             'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a4',
             'relationships': {
-                'descendant': {
+                'descendants': {
                     'data': [
                         {
                             'type': 'descendant',
@@ -132,7 +132,7 @@ def test_integration_create_nested_resource(app):
             "id": "f60717a3-7dc2-4f1a-bdf4-f2804c3127a4",
             "type": "parent",
             "relationships": {
-                "descendant": {
+                "descendants": {
                     "data":
                         [
                             {
