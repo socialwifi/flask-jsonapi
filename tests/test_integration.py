@@ -26,6 +26,18 @@ class DescendantSchema(IdMappingSchema, Schema):
         strict = True
 
 
+class KidSchema(IdMappingSchema, Schema):
+    id = fields.Str(required=True)
+    name = fields.Str(required=False)
+
+    class Meta:
+        type_ = 'kid'
+        self_view_many = 'kid_list'
+        self_view = 'kid_detail'
+        self_view_kwargs = {'kid_id': '<id>'}
+        strict = True
+
+
 class ParentSchema(Schema):
     id = fields.Str(required=True)
 
@@ -44,9 +56,22 @@ class ParentSchemaAtomic(IdMappingSchema, ParentSchema):
         many=True, include_resource_linkage=True,
         type_='descendant'
     )
+    kid = CompleteNestedRelationship(
+        schema=KidSchema,
+        attribute='kid',
+        many=False, include_resource_linkage=True,
+        type_='kid'
+    )
 
 
 class DescendantModel:
+    def __init__(self, **kwargs):
+        self.id = kwargs['id']
+        self.name = kwargs['name']
+        self.parent_id = kwargs['parent_id']
+
+
+class KidModel:
     def __init__(self, **kwargs):
         self.id = kwargs['id']
         self.name = kwargs['name']
@@ -72,10 +97,25 @@ class DescendantRepository(repositories.ResourceRepository):
         setattr(parent, 'descendants', [descendant])
 
 
+class KidRepository(repositories.ResourceRepository):
+    def create(self, data, **kwargs):
+        kid = DescendantModel(**data)
+        self._add_kid_object_to_parent(data, kid)
+        return kid
+
+    def _add_kid_object_to_parent(self, data, kid):
+        parent = database_simulation[data['parent_id']]
+        setattr(parent, 'kid', kid)
+
+
 class ParentRepository(repositories.ResourceRepository):
     children_repositories = {
         'descendants': ChildRepository(
             repository=DescendantRepository(),
+            foreign_parent_name='parent_id'
+        ),
+        'kid': ChildRepository(
+            repository=KidRepository(),
             foreign_parent_name='parent_id'
         )
     }
@@ -149,6 +189,63 @@ def test_integration_create_nested_resource(app):
         },
         "jsonapi": {"version": "1.0"}
     }
+    assert expected == result
+
+
+def test_integration_create_nested_resource_when_child_is_single_object(app):
+    application_api = api.Api(app)
+    application_api.repository(ParentResourceRepositoryViewSet(), 'parent', '/parents/')
+
+    json_data = json.dumps({
+        'data': {
+            'type': 'parent',
+            'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a4',
+            'relationships': {
+                'kid': {
+                    'data':
+                        {
+                            'type': 'kid',
+                            'attributes': {
+                                'name': 'Olga',
+                                '__id__': '_tem_id_3344'
+                            },
+                            'id': 'f60717a3-7dc2-0000-0000-f2804c3127a4'
+                        }
+
+                }
+            }
+        }
+    })
+    response = app.test_client().post(
+        '/parents/',
+        headers=JSONAPI_HEADERS,
+        data=json_data,
+    )
+    result = json.loads(response.data.decode('utf-8'))
+    expected = {
+        "data": {
+            "id": "f60717a3-7dc2-4f1a-bdf4-f2804c3127a4",
+            "type": "parent",
+            "relationships": {
+                "kid": {
+                    "data":
+
+                            {
+                                "id": "f60717a3-7dc2-0000-0000-f2804c3127a4",
+                                "type": "kid",
+                                "attributes": {
+                                    "__id__": "_tem_id_3344",
+                                    "name": "Olga"
+                                }
+                            }
+
+                }
+            }
+        },
+        "jsonapi": {"version": "1.0"}
+    }
+    print(result)
+    print(database_simulation)
     assert expected == result
 
 

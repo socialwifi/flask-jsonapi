@@ -117,6 +117,39 @@ class TestCreatingChildrenModels:
         }
         child_repositorium_object.create.assert_called_with(expected_parametes, **kwargs)
 
+    def test_creating_child_model(self):
+        model = mock.Mock()
+        model.id = 4444444444
+        nested_repo = nested_repository.NestedRepository(mock.Mock())
+        child_repositorium_object = Repository()
+        created_object = mock.Mock()
+        created_object.id = 7777777
+        child_repositorium_object.create = mock.Mock(return_value=created_object)
+        nested_repo.children_repositories = {
+            'children': nested_repository.ChildRepository(
+                repository=child_repositorium_object,
+                foreign_parent_name='parent_name_id'
+            )
+        }
+        data = {
+            'atr1': 1,
+            'children': {
+                '__id__': 120,
+                'art_child': 66,
+            }
+
+        }
+        kwargs = {'id_map': {}}
+        nested_repo.create_children_models(model, data, **kwargs)
+        expected_parametes = {
+            'art_child': 66,
+            'parent_name_id': 4444444444
+        }
+        kwargs = {
+            'id_map': {7777777: 120}
+        }
+        child_repositorium_object.create.assert_called_with(expected_parametes, **kwargs)
+
 
 class RepositoryWithBeginTransaction(repositories.ResourceRepository):
     children_repositories = {}

@@ -47,19 +47,26 @@ class NestedRepository:
     def get_model_dict(self, dict_with_nested_object):
         model_dict = dict_with_nested_object.copy()
         for child_field in self.children_repositories.keys():
-            model_dict.pop(child_field)
+            model_dict.pop(child_field, None)
         return model_dict
 
     def create_children_models(self, model, data,  **kwargs):
         for child_field, children_repository_value in self.children_repositories.items():
-            for child_tree in data.get(child_field):
-                parent_foreign_key_name = children_repository_value.foreign_parent_name
-                child_tree[parent_foreign_key_name] = model.id
-                mapper = IdMapper(kwargs['id_map'])
-                child_tree = mapper.remove_id(child_tree)
-                child_repo = self._get_child_repository(children_repository_value.repository)
-                children_model = child_repo.create(child_tree, **kwargs)
-                mapper.map_ids(children_model.id)
+            if child_field in data:
+                if isinstance(data.get(child_field), list):
+                    for child_tree in data.get(child_field):
+                        self._create_child_model(model, child_tree, children_repository_value, **kwargs)
+                elif isinstance(data.get(child_field), dict):
+                    self._create_child_model(model, data.get(child_field), children_repository_value, **kwargs)
+
+    def _create_child_model(self, parent_model, child_tree, children_repository_value,  **kwargs):
+        parent_foreign_key_name = children_repository_value.foreign_parent_name
+        child_tree[parent_foreign_key_name] = parent_model.id
+        mapper = IdMapper(kwargs['id_map'])
+        child_tree = mapper.remove_id(child_tree)
+        child_repo = self._get_child_repository(children_repository_value.repository)
+        children_model = child_repo.create(child_tree, **kwargs)
+        mapper.map_ids(children_model.id)
 
     def _get_child_repository(self, repository):
         return NestedRepository(repository) if hasattr(repository, 'children_repositories') else repository
