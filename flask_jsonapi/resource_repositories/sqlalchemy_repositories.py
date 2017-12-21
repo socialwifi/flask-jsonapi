@@ -53,7 +53,8 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
             logger.exception(error)
             raise ForbiddenError(detail='Error while deleting {}.'.format(self.instance_name))
 
-    def update(self, id, **data):
+    def update(self, data, **kwargs):
+        id = data['id']
         obj = self.get_detail(id)
         for key, value in data.items():
             self.update_attribute(obj, key, value)

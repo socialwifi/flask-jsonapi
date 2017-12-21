@@ -16,7 +16,7 @@ class ResourceRepository:
     def delete(self, id):
         raise exceptions.NotImplementedMethod('Deleting is not implemented')
 
-    def update(self, id, **data):
+    def update(self, data, **kwargs):
         raise exceptions.NotImplementedMethod('Updating is not implemented')
 
     @contextmanager
