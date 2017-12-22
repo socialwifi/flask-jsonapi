@@ -109,7 +109,7 @@ class ResourceDetail(ResourceBase):
     def read(self, id):
         raise NotImplementedError
 
-    def update(self, id, data):
+    def update(self, id, data, **kwargs):
         raise NotImplementedError
 
     def destroy(self, id):

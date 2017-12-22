@@ -20,9 +20,9 @@ class ResourceRepositoryDetailView(ResourceRepositoryViewMixin, resources.Resour
     def destroy(self, id):
         self.repository.delete(id)
 
-    def update(self, id, data):
+    def update(self, id, data, **kwargs):
         data['id'] = id
-        self.repository.update(**data)
+        self.repository.update(data, **kwargs)
 
 
 class ResourceRepositoryListView(ResourceRepositoryViewMixin, resources.ResourceList):
