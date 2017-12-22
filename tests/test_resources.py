@@ -376,3 +376,31 @@ def test_creating_view_with_dynamic_schema(app, example_schema, example_model):
             'version': '1.0'
         }
     }
+
+
+def test_register_detail_view_without_id_in_url(app, example_schema, example_model):
+    class ExampleDetailView(resources.ResourceDetail):
+        def read(self, id):
+            return example_model(id='11111111-1111-1111-1111-111111111111',
+                                 body='The best instance of all the instances!')
+
+    application_api = api.Api(app)
+    application_api.route(ExampleDetailView, 'example_detail', '/examples/best/',
+                          view_kwargs={'schema': example_schema})
+    response = app.test_client().get(
+        '/examples/best/',
+        headers=JSONAPI_HEADERS
+    )
+    result = json.loads(response.data.decode())
+    assert result == {
+        'data': {
+            'id': '11111111-1111-1111-1111-111111111111',
+            'type': 'example',
+            'attributes': {
+                'body': 'The best instance of all the instances!',
+            }
+        },
+        'jsonapi': {
+            'version': '1.0'
+        }
+    }

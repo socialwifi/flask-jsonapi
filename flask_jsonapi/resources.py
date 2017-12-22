@@ -104,7 +104,7 @@ class ResourceDetail(ResourceBase):
 
     @property
     def resource_id(self):
-        return self.kwargs[self.id_kwarg]
+        return self.kwargs.get(self.id_kwarg)
 
     def read(self, id):
         raise NotImplementedError
