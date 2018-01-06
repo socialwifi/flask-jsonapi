@@ -1,4 +1,3 @@
-from contextlib import contextmanager
 import collections
 
 from flask_jsonapi import exceptions

@@ -1,8 +1,10 @@
 language: python
 python:
-  - "3.5"
-  - "3.6"
+  - 3.5
+  - 3.6
 install:
-  - "pip install -r base_requirements.txt"
-  - "pip install -U pytest==3.0.5"
-script: python -m pytest
+  - pip install -r base_requirements.txt
+  - pip install -U pytest==3.0.5 flake8
+script:
+  - flake8 .
+  - python -m pytest

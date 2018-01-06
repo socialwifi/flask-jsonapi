@@ -1,7 +1,6 @@
 import flask_jsonapi.nested.nested_resources
 from flask_jsonapi import descriptors
 from flask_jsonapi import resource_repository_views
-from flask_jsonapi import resources
 from flask_jsonapi.nested import nested_repository
 
 
@@ -31,7 +30,8 @@ class NestedResourceRepositoryViewSet(resource_repository_views.ResourceReposito
 
     def as_list_view(self, view_name):
         return self.decorate(
-            self.nested_list_view_cls.as_view(view_name, filter_schema=self.filter_schema, **self.get_list_view_kwargs())
+            self.nested_list_view_cls.as_view(view_name, filter_schema=self.filter_schema,
+                                              **self.get_list_view_kwargs())
         )
 
     def get_list_view_kwargs(self):

@@ -5,7 +5,6 @@ from marshmallow_jsonapi import fields
 
 from flask_jsonapi import api
 from flask_jsonapi.resource_repositories import repositories
-from flask_jsonapi import resource_repository_views
 from flask_jsonapi.marshmallow_nested_extension.field import CompleteNestedRelationship
 from flask_jsonapi.marshmallow_nested_extension.schema import IdMappingSchema
 from flask_jsonapi.nested import nested_resource_repositories
@@ -173,6 +172,7 @@ def test_integration_get_list_use_schema_instead_of_atomic_schema(app):
         ],
         'jsonapi': {'version': '1.0'}
     }
+    assert expected == result
 
 
 def test_integration_get_nested_resource(app):
