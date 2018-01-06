@@ -4,6 +4,7 @@ python:
   - 3.6
 install:
   - pip install -r base_requirements.txt
-  - pip install -U pytest==3.0.5
+  - pip install -U pytest==3.0.5 flake8
 script:
+  - flake8 .
   - python -m pytest
