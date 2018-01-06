@@ -194,7 +194,7 @@ class ExampleDecoratedResourceRepositoryViewSet(resource_repository_views.Resour
     )
 
     def __init__(self):
-        super().__init__(repository=Repository())        
+        super().__init__(repository=Repository())
 
 
 def test_integration_selective_decorator_decorated_method(app):

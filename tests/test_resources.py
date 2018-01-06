@@ -194,6 +194,7 @@ def test_integration_create_resource_invalid_input(app, example_schema, example_
         id = fields.UUID()
         f1 = fields.Str(required=True)
         f2 = fields.Str(required=True)
+
         class Meta:
             type_ = 'test'
             strict = True
@@ -349,6 +350,7 @@ def test_integration_patch_with_empty_response(app, example_schema, example_mode
     )
     assert response.status_code == 204
     assert response.data == b''
+
 
 def test_creating_view_with_dynamic_schema(app, example_schema, example_model):
     class ExampleDetailView(resources.ResourceDetail):

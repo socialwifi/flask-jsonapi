@@ -10,7 +10,7 @@ def test_jsonapi_error_response(app):
         error_response = response.JsonApiErrorResponse(
             exceptions.JsonApiException(
                 source="An object containing references to the source of the error. "
-                    "http://jsonapi.org/format/#errors",
+                       "http://jsonapi.org/format/#errors",
                 detail='exception details',
                 title='Something terrible happened.',
                 status=http.HTTPStatus.INTERNAL_SERVER_ERROR

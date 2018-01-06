@@ -4,7 +4,6 @@ from unittest import mock
 import pytest
 
 from flask_jsonapi.resource_repositories import repositories
-from flask_jsonapi import resource_repository_views
 from flask_jsonapi.nested import nested_repository
 
 
@@ -147,4 +146,3 @@ class TestTransaction:
         nested_repo = nested_repository.NestedRepository(repo_with_out_begin_transaction)
         with nested_repo.repository.begin_transaction():
             assert repo_with_out_begin_transaction.very_important_test_value == 0
-

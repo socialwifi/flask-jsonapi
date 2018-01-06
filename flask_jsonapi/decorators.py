@@ -37,4 +37,3 @@ def selective_decorator(decorator, methods):
                 return func(*args, **kwargs)
         return wrapped
     return wrap
-
