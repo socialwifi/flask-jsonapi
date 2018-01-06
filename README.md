@@ -1,6 +1,6 @@
 # flask-jsonapi
 [![Build Status](https://travis-ci.org/socialwifi/flask-jsonapi.svg?branch=master)](https://travis-ci.org/socialwifi/flask-jsonapi)
-[![Latest Version](https://img.shields.io/pypi/v/flask-jsonapi.svg)](https://github.com/socialwifi/flask-jsonapi/blob/master/CHANGELOG.md)
+[![Latest Version](https://img.shields.io/pypi/v/flask-jsonapi.svg)](https://pypi.python.org/pypi/flask-jsonapi/)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/flask-jsonapi.svg)](https://pypi.python.org/pypi/flask-jsonapi/)
 [![Wheel Status](https://img.shields.io/pypi/wheel/flask-jsonapi.svg)](https://pypi.python.org/pypi/flask-jsonapi/)
 [![License](https://img.shields.io/pypi/l/flask-jsonapi.svg)](https://github.com/socialwifi/flask-jsonapi/blob/master/LICENSE)
