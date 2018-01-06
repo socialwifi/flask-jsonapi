@@ -7,7 +7,7 @@ setup(
     name='flask-jsonapi',
     version='0.7.1.dev0',
     description='JSONAPI 1.0 implementation for Flask.',
-    author='SocialWifi',
+    author='Social WiFi',
     author_email='it@socialwifi.com',
     url='https://github.com/socialwifi/flask_jsonapi',
     packages=find_packages(exclude=['tests']),
