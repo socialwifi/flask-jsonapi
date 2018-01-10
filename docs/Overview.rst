@@ -1,10 +1,13 @@
 Overview
-++++++++
+========
 
-flask-jsonapi is a server implementation of JSON API 1.0 for Flask. It allows the rapid creation of API endpoints using this
-format. Such endpoints can be then used by other services or single page applications based on Ember.js, React, Angular.js and alike.
-In a need to write own backend client application e.g. microservices or just a client to external API please refer to
-our client package `jsonapi-request <https://github.com/socialwifi/jsonapi-requests>`_
+flask-jsonapi is a server implementation of `JSON API 1.0 <http://jsonapi.org>`_ specification
+for `Flask <http://flask.pocoo.org/>`_.
+It allows for rapid creation of CRUD JSON API endpoints. Such endpoints can be used by other compatible clients
+like JavaScript frontend applications written in Ember.js, React, Angular.js and alike.
+
+A compatible Python client can be found in the following package:
+`jsonapi-request <https://github.com/socialwifi/jsonapi-requests>`_.
 
 Features
 --------
@@ -27,14 +30,22 @@ flask-jsonapi package is using:
 Installation
 ------------
 
-To install run::
+To install run:
 
-    pip install flask-jsonapi
+.. code-block:: bash
+
+    pip install flask-jsonapi[sqlalchemy]
 
 Short example
 -------------
 
-Example of simple server::
+Let's create a minimal example exposing a single resource ``Article`` as a REST endpoint with CRUD operations.
+We'll use an in-memory SQLite database with SQLAlchemy for storage.
+
+Configuration
+~~~~~~~~~~~~~
+
+.. code-block:: python
 
     import flask
     import sqlalchemy
@@ -52,79 +63,91 @@ Example of simple server::
     Base = declarative_base()
     Base.query = session.query_property()
 
-    class Post(Base):
-        __tablename__ = 'posts'
+    class Article(Base):
+        __tablename__ = 'articles'
         id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
         title = sqlalchemy.Column(sqlalchemy.String)
 
     Base.metadata.create_all(db_engine)
 
-    class PostRepository(sqlalchemy_repositories.SqlAlchemyModelRepository):
-        model = Post
-        instance_name = 'posts'
+    class ArticleRepository(sqlalchemy_repositories.SqlAlchemyModelRepository):
+        model = Article
+        instance_name = 'articles'
         session = session
 
-    post_repository = PostRepository()
-    post_repository.create({'id': 1, 'title': 'First post'})
-
-    class PostSchema(Schema):
+    class ArticleSchema(Schema):
         id = fields.Int()
         title = fields.Str()
 
         class Meta:
-            type_ = 'posts'
+            type_ = 'articles'
             strict = True
 
-    class PostRepositoryViewSet(flask_jsonapi.resource_repository_views.ResourceRepositoryViewSet):
-        schema = PostSchema
-        repository = post_repository
+    class ArticleRepositoryViewSet(flask_jsonapi.resource_repository_views.ResourceRepositoryViewSet):
+        schema = ArticleSchema
+        repository = ArticleRepository()
 
     app = flask.Flask(__name__)
     api = flask_jsonapi.Api(app)
-    api.repository(PostRepositoryViewSet(), 'posts', '/posts/')
+    api.repository(ArticleRepositoryViewSet(), 'articles', '/articles/')
     app.run(host='127.0.0.1', port=5000)
 
-And test it::
+Usage
+~~~~~
+
+Create a new ``Article`` with title "First article":
+
+.. code-block:: bash
 
     $ curl -H 'Content-Type: application/vnd.api+json' \
         -H 'Accept: application/vnd.api+json' \
-        http://localhost:5000/posts/ \
-        --data '{"data": {"attributes": {"title": "Second post"}, "type": "posts"}}' 2>/dev/null | python -m json.tool
+        http://localhost:5000/articles/ \
+        --data '{"data": {"attributes": {"title": "First article"}, "type": "articles"}}' \
+        2>/dev/null | python -m json.tool
+
+Result:
+
+.. code-block:: json
+
     {
         "data": {
+            "type": "articles",
+            "id": 1,
             "attributes": {
-                "title": "Second post"
-            },
-            "id": 2,
-            "type": "posts"
+                "title": "First article"
+            }
         },
         "jsonapi": {
             "version": "1.0"
         }
     }
-    $ curl -H 'Accept: application/vnd.api+json' http://localhost:5000/posts/ 2>/dev/null | python -m json.tool
+
+Get the list of ``Articles``:
+
+.. code-block:: bash
+
+    $ curl -H 'Accept: application/vnd.api+json' \
+        http://localhost:5000/articles/ \
+        2>/dev/null | python -m json.tool
+
+Result:
+
+.. code-block:: json
+
     {
         "data": [
             {
-                "attributes": {
-                    "title": "First post"
-                },
+                "type": "articles",
                 "id": 1,
-                "type": "posts"
-            },
-            {
                 "attributes": {
-                    "title": "Second post"
-                },
-                "id": 2,
-                "type": "posts"
+                    "title": "First article"
+                }
             }
         ],
         "jsonapi": {
             "version": "1.0"
         },
         "meta": {
-            "count": 2
+            "count": 1
         }
     }
-
