@@ -1,5 +1,6 @@
-# flask-jsonapi
+# Flask-jsonapi
 [![Build Status](https://travis-ci.org/socialwifi/flask-jsonapi.svg?branch=master)](https://travis-ci.org/socialwifi/flask-jsonapi)
+[![Documentation Status](https://readthedocs.org/projects/flask-jsonapi/badge/?version=latest)](http://flask-jsonapi.readthedocs.io/en/latest/?badge=latest)
 [![Coverage Status](https://coveralls.io/repos/github/socialwifi/flask-jsonapi/badge.svg)](https://coveralls.io/github/socialwifi/flask-jsonapi)
 [![Latest Version](https://img.shields.io/pypi/v/flask-jsonapi.svg)](https://pypi.python.org/pypi/flask-jsonapi/)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/flask-jsonapi.svg)](https://pypi.python.org/pypi/flask-jsonapi/)
@@ -10,128 +11,122 @@ JSONAPI 1.0 server implementation for Flask.
 
 ## Installation
 
-This package requires at least python 3.5. To install run `pip install flask-jsonapi`
+This package requires at least python 3.5. To install run: `pip install flask-jsonapi`. You can install SQLAlchemy support
+with: `pip install flask-jsonapi[sqlalchemy]`.
 
-## Application example
+## Documentation
 
-Run in python:
+Full documentation is available at: https://flask-jsonapi.readthedocs.io/.
+
+## Simple example
+
+Let’s create a working example of a minimal Flask application. It will expose a single resource `Article` as a REST 
+endpoint with fetch/create/update/delete operations. For persistence layer, it will use an in-memory SQLite database 
+with SQLAlchemy for storage.
+
+### Configuration
 
 ```python
-import collections
-
 import flask
-import marshmallow_jsonapi
+import sqlalchemy
+from sqlalchemy.orm import scoped_session
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+from marshmallow_jsonapi import Schema, fields
 
 import flask_jsonapi
-from flask_jsonapi import exceptions
+from flask_jsonapi.resource_repositories import sqlalchemy_repositories
 
-class ExampleSchema(marshmallow_jsonapi.Schema):
-    id = marshmallow_jsonapi.fields.UUID()
-    body = marshmallow_jsonapi.fields.Str()
+db_engine = sqlalchemy.create_engine('sqlite:///')
+session = scoped_session(sessionmaker(bind=db_engine))
+Base = declarative_base()
+Base.query = session.query_property()
+
+class Article(Base):
+    __tablename__ = 'articles'
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    title = sqlalchemy.Column(sqlalchemy.String)
+
+Base.metadata.create_all(db_engine)
+
+class ArticleRepository(sqlalchemy_repositories.SqlAlchemyModelRepository):
+    model = Article
+    instance_name = 'articles'
+    session = session
+
+class ArticleSchema(Schema):
+    id = fields.Int()
+    title = fields.Str()
 
     class Meta:
-        type_ = 'example'
+        type_ = 'articles'
         strict = True
 
-ExampleModel = collections.namedtuple('ExampleModel', 'id body')
-
-repository = {
-    'f60717a3-7dc2-4f1a-bdf4-f2804c3127a4': ExampleModel(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a4', body='stop'),
-    'f60717a3-7dc2-4f1a-bdf4-f2804c3127a5': ExampleModel(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a5', body='hammer'),
-}
+class ArticleRepositoryViewSet(flask_jsonapi.resource_repository_views.ResourceRepositoryViewSet):
+    schema = ArticleSchema
+    repository = ArticleRepository()
 
 app = flask.Flask(__name__)
-
-class ExampleListView(flask_jsonapi.ResourceList):
-    schema = ExampleSchema
-
-    def read_many(self, filters):
-        return list(repository.values())
-
-    def create(self, data):
-        id = data.get('id') or str(uuid.uuid4())
-        if id in repository:
-            raise exceptions.JsonApiException
-        obj = ExampleModel(id=id, body=data['body'])
-        repository[id] = obj
-        return obj
-
-class ExampleDetailView(flask_jsonapi.ResourceDetail):
-    schema = ExampleSchema
-
-    def read(self, id):
-        if id not in repository:
-            raise exceptions.ObjectNotFound
-        return repository[id]
-
-    def update(self, id, data):
-        if id != data.pop('id', id):
-            raise exceptions.JsonApiException
-        obj = repository[id]
-        obj_dict = obj._asdict()
-        obj_dict.update(data)
-        repository[id] = ExampleModel(**obj_dict)
-
-    def destroy(self, id):
-        if id in repository:
-            del repository[id]
-
-application_api = flask_jsonapi.Api(app)
-application_api.route(ExampleListView, 'example_list', '/examples/')
-application_api.route(ExampleDetailView, 'example_detail', '/examples/<id>/')
-
+api = flask_jsonapi.Api(app)
+api.repository(ArticleRepositoryViewSet(), 'articles', '/articles/')
 app.run(host='127.0.0.1', port=5000)
 ```
-And test it:
+
+### Usage
+
+Create a new `Article` with title “First article”:
 ```bash
-$ curl -H 'Content-Type: application/vnd.api+json' \
-    http://localhost:5000/examples/ \
-    --data '{"data": {"attributes": {"body": "time"}, "type": "example"}}' 2>/dev/null | python -m json.tool
+curl -H 'Content-Type: application/vnd.api+json' \
+    -H 'Accept: application/vnd.api+json' \
+    http://localhost:5000/articles/ \
+    --data '{"data": {"attributes": {"title": "First article"}, "type": "articles"}}' \
+    2>/dev/null | python -m json.tool
+```
+
+Result:
+```json
 {
     "data": {
+        "type": "articles",
+        "id": 1,
         "attributes": {
-            "body": "time"
-        },
-        "id": "77e23a62-7c49-4d0f-bb75-3ae5519226f5",
-        "type": "example"
+            "title": "First article"
+        }
     },
     "jsonapi": {
         "version": "1.0"
     }
 }
-$ curl http://localhost:5000/examples/ 2>/dev/null | python -m json.tool
+```
+
+Get the list of `Articles`:
+```bash
+curl -H 'Accept: application/vnd.api+json' \
+    http://localhost:5000/articles/ \
+    2>/dev/null | python -m json.tool
+```
+
+Result:
+```json
 {
     "data": [
         {
+            "type": "articles",
+            "id": 1,
             "attributes": {
-                "body": "stop"
-            },
-            "id": "f60717a3-7dc2-4f1a-bdf4-f2804c3127a4",
-            "type": "example"
-        },
-        {
-            "attributes": {
-                "body": "time"
-            },
-            "id": "77e23a62-7c49-4d0f-bb75-3ae5519226f5",
-            "type": "example"
-        },
-        {
-            "attributes": {
-                "body": "hammer"
-            },
-            "id": "f60717a3-7dc2-4f1a-bdf4-f2804c3127a5",
-            "type": "example"
+                "title": "First article"
+            }
         }
     ],
     "jsonapi": {
         "version": "1.0"
     },
     "meta": {
-        "count": 3
+        "count": 1
     }
 }
 ```
+
 ## Running tests
 
 ```bash

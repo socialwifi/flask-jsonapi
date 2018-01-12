@@ -5,7 +5,6 @@ Flask-jsonapi
 
 JSONAPI 1.0 server implementation for Flask.
 
-
 Flask-jsonapi is a server implementation of `JSON API 1.0 <http://jsonapi.org>`__ specification
 for `Flask <http://flask.pocoo.org/>`_.
 It allows for rapid creation of CRUD JSON API endpoints. Those endpoints can be used by JSON API clients, eg.
@@ -63,7 +62,7 @@ Flow through layers beginning with an HTTP Request and ending with an HTTP Respo
 Installation
 ------------
 
-To install run:
+To install (with SQLAlchemy support) run:
 
 .. code-block:: bash
 
