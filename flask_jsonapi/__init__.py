@@ -9,6 +9,7 @@ from .resource_repository_views import ResourceRepositoryListView
 from .resource_repository_views import ResourceRepositoryViewSet
 from .resources import ResourceDetail
 from .resources import ResourceList
+from .resources import ResourceBase
 
 __all__ = [
     exceptions,
@@ -22,4 +23,5 @@ __all__ = [
     ResourceRepositoryViewSet,
     ResourceDetail,
     ResourceList,
+    ResourceBase,
 ]

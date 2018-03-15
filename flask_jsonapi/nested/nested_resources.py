@@ -1,18 +1,13 @@
 import http
 from contextlib import contextmanager
 
-from flask_jsonapi import ResourceList, response
+from flask_jsonapi import ResourceBase, ResourceList, response
 
 
-class NestedResourceList(ResourceList):
+class NestedExtenstion(ResourceBase):
     def __init__(self, *, nested_schema, **kwargs):
         super().__init__(**kwargs)
         self.nested_schema = nested_schema
-
-    def post(self, *args, **kwargs):
-        with self.replace_schema():
-            response = super().post(*args, **kwargs)
-        return response
 
     @contextmanager
     def replace_schema(self):
@@ -20,6 +15,13 @@ class NestedResourceList(ResourceList):
         self.schema = self.nested_schema
         yield
         self.schema = schema
+
+
+class NestedResourceList(NestedExtenstion, ResourceList):
+    def post(self, *args, **kwargs):
+        with self.replace_schema():
+            response = super().post(*args, **kwargs)
+        return response
 
     def prepare_response(self, data):
         id_map = {}

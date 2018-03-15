@@ -18,7 +18,7 @@ class NestedRepository:
     def create(self, data, **kwargs):
         if self.structure_has_nested_object(data):
             with self.repository.begin_transaction():
-                return self.create_model_with_children(data, **kwargs)
+                return self.handle_model_with_children(data, self.create, **kwargs)
         else:
             return self.repository.create(data, **kwargs)
 
@@ -31,17 +31,14 @@ class NestedRepository:
     def delete(self, id):
         return self.repository.delete(id)
 
-    def update(self, id, **data):
-        return self.repository.update(id, **data)
-
-    def create_model_with_children(self, data, **kwargs):
-        model_dict = self.get_model_dict(data)
-        model = self.create(model_dict, **kwargs)
-        self.create_children_models(model, data,  **kwargs)
-        return model
-
     def structure_has_nested_object(self, data):
         return all(child_field in data.keys() for child_field in self.children_repositories.keys())
+
+    def handle_model_with_children(self, data, method, **kwargs):
+        model_dict = self.get_model_dict(data)
+        model = method(model_dict, **kwargs)
+        self.handle_children_objects(model, data, **kwargs)
+        return model
 
     def get_model_dict(self, dict_with_nested_object):
         model_dict = dict_with_nested_object.copy()
@@ -49,19 +46,27 @@ class NestedRepository:
             model_dict.pop(child_field)
         return model_dict
 
-    def create_children_models(self, model, data,  **kwargs):
+    def handle_children_objects(self, model, data, **kwargs):
         for child_field, children_repository_value in self.children_repositories.items():
+            child_repo = self._get_child_repository(children_repository_value.repository)
+            foreign_parent_name = children_repository_value.foreign_parent_name
+            objects_to_create = []
             for child_tree in data.get(child_field):
-                parent_foreign_key_name = children_repository_value.foreign_parent_name
-                child_tree[parent_foreign_key_name] = model.id
-                mapper = IdMapper(kwargs['id_map'])
-                child_tree = mapper.remove_id(child_tree)
-                child_repo = self._get_child_repository(children_repository_value.repository)
-                children_model = child_repo.create(child_tree, **kwargs)
-                mapper.map_ids(children_model.id)
+                if '__id__' in child_tree.keys():
+                    objects_to_create.append(child_tree)
+            if objects_to_create:
+                [self.create_child(obj, child_repo, model, foreign_parent_name, **kwargs) for obj in objects_to_create]
 
     def _get_child_repository(self, repository):
         return NestedRepository(repository) if hasattr(repository, 'children_repositories') else repository
+
+    @staticmethod
+    def create_child(obj, child_repo, model, parent_fk_name, **kwargs):
+        obj[parent_fk_name] = model.id
+        mapper = IdMapper(kwargs['id_map'])
+        obj = mapper.remove_id(obj)
+        object_model = child_repo.create(obj, **kwargs)
+        mapper.map_ids(object_model.id)
 
     @staticmethod
     def underscorize(text):

@@ -31,11 +31,11 @@ class NestedResourceRepositoryViewSet(resource_repository_views.ResourceReposito
     def as_list_view(self, view_name):
         return self.decorate(
             self.nested_list_view_cls.as_view(view_name, filter_schema=self.filter_schema,
-                                              **self.get_list_view_kwargs())
+                                              **self.get_views_kwargs())
         )
 
-    def get_list_view_kwargs(self):
-        kwargs = self.get_views_kwargs()
+    def get_views_kwargs(self):
+        kwargs = super().get_views_kwargs()
         kwargs.update({
             'nested_schema': self.nested_schema,
         })

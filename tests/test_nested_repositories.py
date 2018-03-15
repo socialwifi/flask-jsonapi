@@ -106,7 +106,7 @@ class TestCreatingChildrenModels:
             ]
         }
         kwargs = {'id_map': {}}
-        nested_repo.create_children_models(model, data, **kwargs)
+        nested_repo.handle_children_objects(model, data,  **kwargs)
         expected_parametes = {
             'art_child': 66,
             'parent_name_id': 4444444444
