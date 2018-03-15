@@ -1,7 +1,7 @@
 import http
 from contextlib import contextmanager
 
-from flask_jsonapi import ResourceBase, ResourceList, response
+from flask_jsonapi import ResourceBase, ResourceList, ResourceDetail, response
 
 
 class NestedExtenstion(ResourceBase):
@@ -15,6 +15,22 @@ class NestedExtenstion(ResourceBase):
         self.schema = self.nested_schema
         yield
         self.schema = schema
+
+
+class NestedResourceDetail(NestedExtenstion, ResourceDetail):
+    def patch(self, *args, **kwargs):
+        with self.replace_schema():
+            response = super().patch(*args, **kwargs)
+        return response
+
+    def prepare_response(self, data, computed_schema):
+        id_map = {}
+        kwargs = {'id_map': id_map}
+        resource = self.update(self.resource_id, data, **kwargs)
+        if resource:
+            return response.JsonApiResponse(computed_schema.dump(resource, **kwargs).data)
+        else:
+            return response.EmptyResponse()
 
 
 class NestedResourceList(NestedExtenstion, ResourceList):

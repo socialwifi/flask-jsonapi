@@ -14,7 +14,7 @@ JSONAPI_HEADERS = {'content-type': 'application/vnd.api+json', 'accept': 'applic
 
 
 class DescendantSchema(IdMappingSchema, Schema):
-    id = fields.Str(required=True)
+    id = fields.Str(required=False)
     name = fields.Str(required=False)
 
     class Meta:
@@ -55,6 +55,7 @@ class DescendantModel:
 class ParentModel:
     def __init__(self, **kwargs):
         self.id = kwargs['id']
+        self.descendant = kwargs.get('descendant', [])
 
 
 database_simulation = {}
@@ -62,13 +63,31 @@ database_simulation = {}
 
 class DescendantRepository(repositories.ResourceRepository):
     def create(self, data, **kwargs):
+        data['id'] = "n3w-ch1ld-3d"
         descendant = DescendantModel(**data)
         self._add_descendant_object_to_parent(data, descendant)
         return descendant
 
+    def update(self, data, **kwargs):
+        parent = database_simulation[data['parent_id']]
+        current_descedants = getattr(parent, 'descendant')
+        for descendant in current_descedants:
+            if descendant.id == data['id']:
+                current_descedants.remove(descendant)
+        updated_descendant = DescendantModel(**data)
+        current_descedants.append(updated_descendant)
+        setattr(parent, 'descendant', current_descedants)
+        return updated_descendant
+
+    def delete(self, id):
+        for parent in database_simulation.values():
+            parent.descendant = [descendant for descendant in parent.descendant if descendant.id != id]
+
     def _add_descendant_object_to_parent(self, data, descendant):
         parent = database_simulation[data['parent_id']]
-        setattr(parent, 'descendant', [descendant])
+        current_descedants = getattr(parent, 'descendant')
+        current_descedants.append(descendant)
+        setattr(parent, 'descendant', current_descedants)
 
 
 class ParentRepository(repositories.ResourceRepository):
@@ -83,6 +102,12 @@ class ParentRepository(repositories.ResourceRepository):
         obj = ParentModel(**data)
         database_simulation[data['id']] = obj
         return obj
+
+    def update(self, data, **kwargs):
+        if data['id'] in database_simulation:
+            return database_simulation[data['id']]
+        else:
+            return self.create(data, **kwargs)
 
     def get_list(self, filters=None):
         return database_simulation.values()
@@ -113,8 +138,7 @@ def test_integration_create_nested_resource(app):
                                 'name': 'Olga',
                                 '__id__': '_tem_id_3344'
                             },
-                            'id': 'f60717a3-7dc2-0000-0000-f2804c3127a4'
-                        }
+                        },
                     ]
                 }
             }
@@ -135,7 +159,7 @@ def test_integration_create_nested_resource(app):
                     "data":
                         [
                             {
-                                "id": "f60717a3-7dc2-0000-0000-f2804c3127a4",
+                                "id": "n3w-ch1ld-3d",
                                 "type": "descendant",
                                 "attributes": {
                                     "__id__": "_tem_id_3344",
@@ -147,6 +171,91 @@ def test_integration_create_nested_resource(app):
             }
         },
         "jsonapi": {"version": "1.0"}
+    }
+    assert expected == result
+
+
+def test_integration_update_nested_resource(app):
+    application_api = api.Api(app)
+    application_api.repository(ParentResourceRepositoryViewSet(), 'parent', '/parents/')
+    parent_repo = ParentRepository()
+    kwargs = {
+        'parent_id': 'l337-p4r3n7-1d',
+        'id': 'l337-ch1ld1-1d',
+        'name': 'Riot'
+    }
+    descendant1 = DescendantModel(**kwargs)
+    kwargs = {
+        'parent_id': 'l337-p4r3n7-1d',
+        'id': 'l337-ch1ld2-1d',
+        'name': 'Blizzard'
+    }
+    descendant2 = DescendantModel(**kwargs)
+    parent_repo.create({
+        'id': 'l337-p4r3n7-1d',
+        'descendant': [descendant1, descendant2]
+    })
+    json_data = json.dumps({
+        'data': {
+            'type': 'parent',
+            'id': 'l337-p4r3n7-1d',
+            'relationships': {
+                'descendant': {
+                    'data': [
+                        {
+                            'type': 'descendant',
+                            'attributes': {
+                                'name': 'Mrukus',
+                                '__id__': '_tem_id_3344'
+                            },
+                        },
+                        {
+                            'id': 'l337-ch1ld1-1d',
+                            'type': 'descendant',
+                            'attributes': {
+                                'name': 'Janek Pochodnia'
+                            },
+                        },
+                    ]
+                }
+            }
+        }
+    })
+    response = app.test_client().patch(
+        '/parents/l337-p4r3n7-1d/',
+        headers=JSONAPI_HEADERS,
+        data=json_data,
+    )
+    result = json.loads(response.data.decode('utf-8'))
+    expected = {
+        'data': {
+            'type': 'parent',
+            'id': 'l337-p4r3n7-1d',
+            'relationships': {
+                'descendant': {
+                    'data': [
+                        {
+                            'id': 'l337-ch1ld1-1d',
+                            'type': 'descendant',
+                            'attributes': {
+                                'name': 'Janek Pochodnia'
+                            }
+                        },
+                        {
+                            'id': 'n3w-ch1ld-3d',
+                            'type': 'descendant',
+                            'attributes': {
+                                '__id__': '_tem_id_3344',
+                                'name': 'Mrukus'
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        'jsonapi': {
+            'version': '1.0'
+        }
     }
     assert expected == result
 

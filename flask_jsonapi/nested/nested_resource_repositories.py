@@ -4,6 +4,13 @@ from flask_jsonapi import resource_repository_views
 from flask_jsonapi.nested import nested_repository
 
 
+class NestedResourceRepositoryDetailView(resource_repository_views.ResourceRepositoryViewMixin,
+                                         flask_jsonapi.nested.nested_resources.NestedResourceDetail):
+    def update(self, id, data, **kwargs):
+        data['id'] = id
+        return self.repository.update(data, **kwargs)
+
+
 class NestedResourceRepositoryListView(resource_repository_views.ResourceRepositoryViewMixin,
                                        flask_jsonapi.nested.nested_resources.NestedResourceList):
     def read_many(self, filters):
@@ -16,6 +23,7 @@ class NestedResourceRepositoryListView(resource_repository_views.ResourceReposit
 class NestedResourceRepositoryViewSet(resource_repository_views.ResourceRepositoryViewSet):
     nested_schema = descriptors.NotImplementedProperty('nested_schema')
     nested_list_view_cls = NestedResourceRepositoryListView
+    nested_detail_view_cls = NestedResourceRepositoryDetailView
 
     def __init__(self, *, nested_schema=None, nested_list_view_cls=None, **kwargs):
         super().__init__(**kwargs)
@@ -32,6 +40,11 @@ class NestedResourceRepositoryViewSet(resource_repository_views.ResourceReposito
         return self.decorate(
             self.nested_list_view_cls.as_view(view_name, filter_schema=self.filter_schema,
                                               **self.get_views_kwargs())
+        )
+
+    def as_detail_view(self, view_name):
+        return self.decorate(
+            self.nested_detail_view_cls.as_view(view_name, **self.get_views_kwargs())
         )
 
     def get_views_kwargs(self):

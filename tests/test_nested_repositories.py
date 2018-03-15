@@ -11,6 +11,23 @@ class Repository:
     def create(self, data, **kwargs):
         pass
 
+    def update(self, data, **kwargs):
+        pass
+
+    def delete(self, id):
+        pass
+
+
+class RepositoryWithBeginTransaction(repositories.ResourceRepository):
+    children_repositories = {}
+    very_important_test_value = 0
+
+    @contextmanager
+    def begin_transaction(self):
+        self.very_important_test_value = 999
+        yield
+        self.very_important_test_value = 0
+
 
 class TestUtils:
     def test_underscorize(self):
@@ -85,6 +102,7 @@ class TestCreatingChildrenModels:
     def test_creating_children_models(self):
         model = mock.Mock()
         model.id = 4444444444
+        model.children = []
         nested_repo = nested_repository.NestedRepository(mock.Mock())
         child_repositorium_object = Repository()
         created_object = mock.Mock()
@@ -117,15 +135,116 @@ class TestCreatingChildrenModels:
         child_repositorium_object.create.assert_called_with(expected_parametes, **kwargs)
 
 
-class RepositoryWithBeginTransaction(repositories.ResourceRepository):
-    children_repositories = {}
-    very_important_test_value = 0
+class TestUpdatingChildrenModels:
+    class ParentRepository(RepositoryWithBeginTransaction):
+        def update(self, *args, **kwargs):
+            parent = mock.Mock()
+            parent.id = 4444444444
+            child1 = mock.Mock()
+            child1.id = 1
+            child1.name = 'Tom'
+            child2 = mock.Mock()
+            child2.id = 2
+            child2.name = 'Pat'
+            parent.children = [child1, child2]
+            return parent
 
-    @contextmanager
-    def begin_transaction(self):
-        self.very_important_test_value = 999
-        yield
-        self.very_important_test_value = 0
+    def setup_parent(self):
+        parent = mock.Mock()
+        parent.id = 4444444444
+        parent_repository = self.ParentRepository()
+        child_repository_object = Repository()
+        parent_repository.children_repositories = {
+            'children': nested_repository.ChildRepository(
+                repository=child_repository_object,
+                foreign_parent_name='parent_name_id'
+            )
+        }
+        nested_repo = nested_repository.NestedRepository(repository=parent_repository)
+        return nested_repo, child_repository_object, parent.id
+
+    def test_updating_child_which_was_present_but_has_changed(self):
+        nested_repo, child_repository_object, parent_id = self.setup_parent()
+        updated_object = mock.Mock()
+        updated_object.id = 1
+        child_repository_object.update = mock.Mock(return_value=updated_object)
+        data = {
+            'atr1': 1,
+            'children': [
+                {
+                    'id': 1,
+                    'name': 'Janek Pochodnia',
+                },
+                {
+                    'id': 2,
+                    'name': 'Pat Petarda',
+                },
+            ]
+        }
+        expected_parametes = {
+            'id': 1,
+            'name': 'Janek Pochodnia',
+            'parent_name_id': 4444444444
+        }
+        nested_repo.update(data)
+        args, _ = child_repository_object.update.call_args_list[0]
+        assert args == (expected_parametes,)
+        expected_parametes = {
+            'id': 2,
+            'name': 'Pat Petarda',
+            'parent_name_id': 4444444444
+        }
+        args, _ = child_repository_object.update.call_args_list[1]
+        assert args == (expected_parametes,)
+
+    def test_creating_child_which_was_not_present(self):
+        nested_repo, child_repository_object, parent_id = self.setup_parent()
+        created_object = mock.Mock()
+        created_object.id = 7777777
+        child_repository_object.create = mock.Mock(return_value=created_object)
+        data = {
+            'atr1': 1,
+            'children': [
+                {
+                    'id': 1,
+                    'name': 'Tom',
+                },
+                {
+                    'id': 2,
+                    'name': 'Pat',
+                },
+                {
+                    '__id__': 120,
+                    'name': 'JOHN CENA',
+                }
+            ]
+        }
+        kwargs = {
+            'id_map': {7777777: 120}
+        }
+        expected_parametes = {
+            'name': 'JOHN CENA',
+            'parent_name_id': 4444444444
+        }
+        nested_repo.update(data, **kwargs)
+        child_repository_object.create.assert_called_with(expected_parametes, **kwargs)
+
+    def test_deleting_child_which_was_present_but_now_is_not(self):
+        nested_repo, child_repository_object, parent_id = self.setup_parent()
+        deleted_object = mock.Mock()
+        deleted_object.id = 1
+        child_repository_object.delete = mock.Mock()
+        data = {
+            'atr1': 1,
+            'children': [
+                {
+                    'id': 2,
+                    'name': 'Pat',
+                },
+            ]
+        }
+        nested_repo.update(data)
+        child_repository_object.delete.assert_called_with(deleted_object.id)
 
 
 class RepositoryWithOutBeginTransaction(repositories.ResourceRepository):

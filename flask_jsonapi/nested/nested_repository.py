@@ -22,6 +22,13 @@ class NestedRepository:
         else:
             return self.repository.create(data, **kwargs)
 
+    def update(self, data, **kwargs):
+        if self.structure_has_nested_object(data):
+            with self.repository.begin_transaction():
+                return self.handle_model_with_children(data, self.update, **kwargs)
+        else:
+            return self.repository.update(data, **kwargs)
+
     def get_detail(self, id):
         return self.repository.get_detail(id)
 
@@ -51,9 +58,20 @@ class NestedRepository:
             child_repo = self._get_child_repository(children_repository_value.repository)
             foreign_parent_name = children_repository_value.foreign_parent_name
             objects_to_create = []
+            objects_to_update = []
             for child_tree in data.get(child_field):
                 if '__id__' in child_tree.keys():
                     objects_to_create.append(child_tree)
+                if 'id' in child_tree.keys():
+                    objects_to_update.append(child_tree)
+            if objects_to_update:
+                [self.update_child(obj, child_repo, model, foreign_parent_name, **kwargs) for obj in objects_to_update]
+                current_children_ids = set([child.id for child in getattr(model, child_field)])
+                objects_ids = [obj['id'] for obj in objects_to_update]
+                object_ids_to_delete = list(current_children_ids - set(objects_ids))
+                [self.delete_child(object_id, child_repo) for object_id in object_ids_to_delete]
+            else:
+                [self.delete_child(child.id, child_repo) for child in getattr(model, child_field)]
             if objects_to_create:
                 [self.create_child(obj, child_repo, model, foreign_parent_name, **kwargs) for obj in objects_to_create]
 
@@ -67,6 +85,15 @@ class NestedRepository:
         obj = mapper.remove_id(obj)
         object_model = child_repo.create(obj, **kwargs)
         mapper.map_ids(object_model.id)
+
+    @staticmethod
+    def update_child(obj, child_repo, model, parent_fk_name, **kwargs):
+        obj[parent_fk_name] = model.id
+        child_repo.update(obj, **kwargs)
+
+    @staticmethod
+    def delete_child(object_id, child_repo):
+        child_repo.delete(object_id)
 
     @staticmethod
     def underscorize(text):

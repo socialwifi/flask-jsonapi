@@ -96,11 +96,14 @@ class ResourceDetail(ResourceBase):
             if errors:
                 return response.JsonApiErrorResponse.from_marshmallow_errors(errors)
             else:
-                resource = self.update(self.resource_id, data)
-                if resource:
-                    return response.JsonApiResponse(computed_schema.dump(resource).data)
-                else:
-                    return response.EmptyResponse()
+                return self.prepare_response(data, computed_schema)
+
+    def prepare_response(self, data, computed_schema):
+        resource = self.update(self.resource_id, data)
+        if resource:
+            return response.JsonApiResponse(computed_schema.dump(resource).data)
+        else:
+            return response.EmptyResponse()
 
     @property
     def resource_id(self):
