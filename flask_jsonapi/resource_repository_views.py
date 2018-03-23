@@ -26,7 +26,7 @@ class ResourceRepositoryDetailView(ResourceRepositoryViewMixin, resources.Resour
 
 
 class ResourceRepositoryListView(ResourceRepositoryViewMixin, resources.ResourceList):
-    def read_many(self, filters):
+    def read_many(self, filters, pagination):
         return self.repository.get_list(filters)
 
     def create(self, data, **kwargs):

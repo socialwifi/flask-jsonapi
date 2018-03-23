@@ -26,7 +26,7 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
             logger.exception(error)
             raise ForbiddenError(detail='{} could not be created.'.format(self.instance_name.capitalize()))
 
-    def get_list(self, filters=None):
+    def get_list(self, filters=None, pagination=None):
         try:
             query = self.get_query()
             return self.apply_filters(query, filters).all()

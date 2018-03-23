@@ -38,7 +38,7 @@ def test_integration_get_list(app, example_schema, example_model):
     class ExampleListView(resources.ResourceList):
         schema = example_schema
 
-        def read_many(self, filters):
+        def read_many(self, filters, pagination):
             return [
                 example_model(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a4', body='heheh'),
                 example_model(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a5', body='hihi'),
@@ -133,7 +133,7 @@ def test_integration_get_filtered_list(app, example_schema, example_model):
 
         applied_filters = []
 
-        def read_many(self, filters):
+        def read_many(self, filters, pagination):
             self.applied_filters.append(filters)
             return []
 
@@ -150,6 +150,29 @@ def test_integration_get_filtered_list(app, example_schema, example_model):
         'renamed': 'another',
         'integer': 3,
     }]
+
+
+def test_integration_pagination(app, example_schema):
+    class ExampleListView(resources.ResourceList):
+        schema = example_schema
+
+        applied_pagination = {}
+
+        def read_many(self, filters, pagination):
+            self.applied_pagination.update(pagination)
+            return []
+
+    application_api = api.Api(app)
+    application_api.route(ExampleListView, 'example_list', '/examples/')
+    response = app.test_client().get(
+        '/examples/?page[size]=100&page[number]=50',
+        headers=JSONAPI_HEADERS
+    )
+    assert response.status_code == 200
+    assert ExampleListView.applied_pagination == {
+        'size': 100,
+        'number': 50,
+    }
 
 
 def test_integration_create_resource(app, example_schema, example_model):
