@@ -1,7 +1,7 @@
 0.7.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Added pagination support.
 
 
 0.7.0 (2017-11-20)
