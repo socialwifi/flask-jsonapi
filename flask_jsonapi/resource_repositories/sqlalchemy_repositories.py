@@ -29,7 +29,9 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
     def get_list(self, filters=None, pagination=None):
         try:
             query = self.get_query()
-            return self.apply_filters(query, filters).all()
+            filtered_query = self.apply_filters(query, filters)
+            paginated_query = self.apply_pagination(filtered_query, pagination)
+            return paginated_query.all()
         except exc.SQLAlchemyError as error:
             logger.exception(error)
             raise ForbiddenError(detail='Error while getting {} list.'.format(self.instance_name))
@@ -77,6 +79,15 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
             else:
                 query.filter_by(**{filter: value})
         return query
+
+    def apply_pagination(self, query, pagination):
+        pagination = pagination or {}
+        size = pagination.get('size')
+        number = pagination.get('number')
+        if size is not None and number is not None:
+            return query.limit(size).offset(size * (number - 1))
+        else:
+            return query
 
     def build(self, kwargs):
         return self.model(**kwargs)
