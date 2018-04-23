@@ -12,6 +12,9 @@ class NestedResourceRepositoryListView(resource_repository_views.ResourceReposit
     def create(self, data, **kwargs):
         return self.repository.create(data, **kwargs)
 
+    def get_count(self, filters):
+        return self.repository.get_count(filters)
+
 
 class NestedResourceRepositoryViewSet(resource_repository_views.ResourceRepositoryViewSet):
     nested_schema = descriptors.NotImplementedProperty('nested_schema')

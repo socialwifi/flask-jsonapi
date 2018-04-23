@@ -19,6 +19,9 @@ class ResourceRepository:
     def update(self, data, **kwargs):
         raise exceptions.NotImplementedMethod('Updating is not implemented')
 
+    def get_count(self, filters=None):
+        raise NotImplementedError
+
     @contextmanager
     def begin_transaction(self):
         yield

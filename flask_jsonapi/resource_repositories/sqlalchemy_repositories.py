@@ -1,6 +1,7 @@
 import logging
 
 from sqlalchemy import exc
+from sqlalchemy import func
 from sqlalchemy.orm import exc as orm_exc
 
 from flask_jsonapi import exceptions
@@ -94,3 +95,9 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
 
     def update_attribute(self, obj, key, new_value):
         setattr(obj, key, new_value)
+
+    def get_count(self, filters=None):
+        query = self.get_query()
+        filtered_query = self.apply_filters(query, filters)
+        count_query = filtered_query.statement.with_only_columns([func.count()])
+        return self.session.execute(count_query).scalar()

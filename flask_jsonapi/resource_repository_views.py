@@ -32,6 +32,9 @@ class ResourceRepositoryListView(ResourceRepositoryViewMixin, resources.Resource
     def create(self, data, **kwargs):
         return self.repository.create(data, **kwargs)
 
+    def get_count(self, filters):
+        return self.repository.get_count(filters)
+
 
 class ResourceRepositoryViewSet:
     repository = repositories.ResourceRepository()
