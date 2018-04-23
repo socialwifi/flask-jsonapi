@@ -52,3 +52,9 @@ class TestPagination:
         ]
         users_2 = user_repository.get_list(pagination={'size': 2, 'number': 2})
         assert users_2 == []
+
+    def test_get_count(self, user_repository):
+        user_repository.create({'id': 1, 'name': 'Mr. Bean'})
+        user_repository.create({'id': 2, 'name': 'Darth Vader'})
+        count = user_repository.get_count()
+        assert count == 2

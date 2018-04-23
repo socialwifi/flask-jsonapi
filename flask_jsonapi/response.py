@@ -46,12 +46,23 @@ class BaseJsonApiResponse(BaseResponse):
 
 
 class JsonApiResponse(BaseJsonApiResponse):
-    def __init__(self, response_data, headers=None, status=None):
+    def __init__(self, response_data, links=None, headers=None, status=None):
         self.response_data = response_data
+        self.links = links or {}
         super().__init__(headers, status)
 
     def get_response_data(self):
-        return self.response_data
+        return dict(
+            **self.response_data,
+            **self.get_links(),
+        )
+
+    def get_links(self):
+        if self.links:
+            links = {'links': self.links}
+        else:
+            links = {}
+        return links
 
 
 class JsonApiListResponse(JsonApiResponse):
