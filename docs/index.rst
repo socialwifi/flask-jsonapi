@@ -28,6 +28,7 @@ Flask-jsonapi implements the following parts of the JSON API specification:
 * **creating, updating and deleting resources** [`specification <http://jsonapi.org/format/#crud>`__]
 * **inclusion of related resources** [`specification <http://jsonapi.org/format/#fetching-includes>`__]
 * **filtering** - helps with adding filters to views (helpers for SQLAlchemy - in development), the format is compatible with `recommendations <http://jsonapi.org/recommendations/#filtering>`__
+* **pagination** [`specification <http://jsonapi.org/format/#fetching-pagination>`__]
 * **links** [`specification <http://jsonapi.org/format/#document-links>`__] - resolved by marshmallow-jsonapi (`docs <https://marshmallow-jsonapi.readthedocs.io/en/latest/quickstart.html#flask-integration>`__)
 * **error objects** [`specification <http://jsonapi.org/format/#errors>`__]
 * **resource-level permissions** - view-level decorators support in ViewSets
@@ -43,7 +44,6 @@ Not implemented yet:
 * **object-level permissions** - in development
 * **sparse fieldsets** [`specification <http://jsonapi.org/format/#fetching-sparse-fieldsets>`__]
 * **sorting** [`specification <http://jsonapi.org/format/#fetching-sorting>`__]
-* **pagination** [`specification <http://jsonapi.org/format/#fetching-pagination>`__]
 
 
 Architecture
@@ -197,4 +197,5 @@ Table of Contents
    repositories
    including_relationships
    filtering
+   pagination
    extensions

@@ -1,9 +1,9 @@
 import http
+import logging
 
 import flask
 import marshmallow
 from flask import helpers
-from flask import logging
 from flask import request
 from flask import views
 from marshmallow_jsonapi import exceptions as marshmallow_jsonapi_exceptions
@@ -12,6 +12,7 @@ from flask_jsonapi import decorators
 from flask_jsonapi import descriptors
 from flask_jsonapi import exceptions
 from flask_jsonapi import filters_schema
+from flask_jsonapi import query_string
 from flask_jsonapi import response
 
 logger = logging.getLogger(__name__)
@@ -119,6 +120,7 @@ class ResourceDetail(ResourceBase):
 class ResourceList(ResourceBase):
     methods = ['GET', 'POST']
     filter_schema = filters_schema.FilterSchema({})
+    pagination = query_string.SizeNumberPagination()
 
     def __init__(self, *, filter_schema=None, **kwargs):
         super().__init__(**kwargs)
@@ -126,7 +128,10 @@ class ResourceList(ResourceBase):
             self.filter_schema = filter_schema
 
     def get(self, *args, **kwargs):
-        objects_list = self.read_many(filters=self.filter_schema.parse())
+        parsed_filters = self.filter_schema.parse()
+        parsed_pagination = self.pagination.parse()
+        objects_list = self.read_many(filters=parsed_filters,
+                                      pagination=parsed_pagination)
         include_fields = self._check_include_fields()
         try:
             objects, errors = self.schema(many=True, include_data=include_fields).dump(objects_list)
@@ -136,9 +141,21 @@ class ResourceList(ResourceBase):
             if errors:
                 return response.JsonApiErrorResponse.from_marshmallow_errors(errors)
             else:
+                pagination_links = self.get_pagination_links(parsed_pagination, parsed_filters)
                 return response.JsonApiListResponse(
                     response_data=objects,
+                    links=pagination_links,
                 )
+
+    def get_pagination_links(self, parsed_pagination, parsed_filters):
+        if parsed_pagination:
+            page_size = parsed_pagination['size']
+            current_page = parsed_pagination['number']
+            total_count = self.get_count(filters=parsed_filters)
+            pagination_links = self.pagination.get_links(page_size, current_page, total_count)
+        else:
+            pagination_links = {}
+        return pagination_links
 
     def post(self, *args, **kwargs):
         try:
@@ -160,7 +177,10 @@ class ResourceList(ResourceBase):
             status=http.HTTPStatus.CREATED,
         )
 
-    def read_many(self, filters):
+    def read_many(self, filters, pagination):
+        raise NotImplementedError
+
+    def get_count(self, filters):
         raise NotImplementedError
 
     def create(self, data, **kwargs):

@@ -7,7 +7,7 @@ class ResourceRepository:
     def create(self, data, **kwargs):
         raise exceptions.NotImplementedMethod('Creating is not implemented.')
 
-    def get_list(self, filters=None):
+    def get_list(self, filters=None, pagination=None):
         raise exceptions.NotImplementedMethod('Getting list is not implemented.')
 
     def get_detail(self, id):
@@ -18,6 +18,9 @@ class ResourceRepository:
 
     def update(self, data, **kwargs):
         raise exceptions.NotImplementedMethod('Updating is not implemented')
+
+    def get_count(self, filters=None):
+        raise NotImplementedError
 
     @contextmanager
     def begin_transaction(self):

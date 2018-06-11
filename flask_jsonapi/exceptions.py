@@ -72,6 +72,17 @@ class InvalidSort(BadRequest):
         )
 
 
+class InvalidPage(BadRequest):
+    title = "Invalid page querystring parameter."
+
+    def __init__(self, detail, **kwargs):
+        super().__init__(
+            source={'parameter': 'page'},
+            detail=detail,
+            **kwargs
+        )
+
+
 class ObjectNotFound(JsonApiException):
     title = "Object not found"
     status = 404
