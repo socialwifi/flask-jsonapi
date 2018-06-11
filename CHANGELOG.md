@@ -1,4 +1,4 @@
-0.7.1 (unreleased)
+0.8.0 (2018-06-11)
 ------------------
 
 - Added pagination support.
