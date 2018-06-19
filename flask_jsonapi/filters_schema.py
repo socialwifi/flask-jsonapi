@@ -39,7 +39,7 @@ class FilterField(utils.EqualityMixin):
         self.field_name_override = field_name
         self._parse_value = parse_value
 
-    def parse(self, field_name, remaining_filter_attributes, value):
+    def parse(self, processed_filter_path, remaining_filter_attributes, value):
         if len(remaining_filter_attributes) > 1:
             raise ValueError("attribute field must be specified as the last field in filter")
         try:
@@ -48,7 +48,8 @@ class FilterField(utils.EqualityMixin):
         except ValueError:
             raise
         else:
-            filter_attribute = '{}__{}'.format(field_name, operator or '')
+            string_path = '.'.join(processed_filter_path)
+            filter_attribute = '{}__{}'.format(string_path, operator or '')
             return {filter_attribute: value}
 
     def parse_value(self, value):
@@ -69,6 +70,26 @@ class ListFilterField(FilterField):
 
     def parse_value(self, value_string):
         return [self._parse_value(part) for part in value_string.split(',')]
+
+
+class RelationshipFilterField(FilterField):
+    def __init__(self, fields: dict, field_name=None):
+        self.field_name_override = field_name
+        self.fields = fields
+        self.fields_name_map = FilterFieldNameOverrideMap(fields)
+
+    def parse(self, processed_filter_path, remaining_filter_attribute_path, value):
+        if len(remaining_filter_attribute_path) == 0:
+            raise ValueError("filtering directly by relationship is forbidden")
+        current_filter_attribute, *remaining_filter_attributes = remaining_filter_attribute_path
+        current_filter_field_name = self.fields_name_map.get(current_filter_attribute)
+        field = self.fields[current_filter_field_name]
+        current_processed_filter_path = [*processed_filter_path, current_filter_field_name]
+        return field.parse(current_processed_filter_path, remaining_filter_attributes, value)
+
+    @classmethod
+    def from_filter_schema(cls, filter_schema, field_name=None):
+        return RelationshipFilterField(field_name=field_name, fields=filter_schema.base_filters)
 
 
 class FilterSchemaOptions:
@@ -104,7 +125,27 @@ class FilterSchemaMeta(type):
         return dict(filters)
 
 
+class FilterFieldNameOverrideMap:
+    def __init__(self, fields):
+        self.fields = fields
+
+    def get(self, attribute):
+        try:
+            filter_field_name = self.field_name_override_map[attribute]
+        except KeyError:
+            raise ValueError("no matching filter for attribute '{}'".format(attribute))
+        else:
+            return filter_field_name
+
+    @property
+    def field_name_override_map(self):
+        return {field.field_name_override or name: name for name, field in self.fields.items()}
+
+
 class FilterSchemaBase:
+    def __init__(self):
+        self.fields_name_map = FilterFieldNameOverrideMap(self.base_filters)
+
     @classmethod
     def get_filters(cls):
         filters = {}
@@ -140,13 +181,10 @@ class FilterSchemaBase:
 
     def _process_filter(self, key, value):
         filter_attributes = self._extract_filter_attributes(key)
-        current_filter_attribute, *remaining_filter_attributes = filter_attributes
-        try:
-            filter_field_name = self.field_name_override_map[current_filter_attribute]
-            filter_field = self.base_filters[filter_field_name]
-        except KeyError:
-            raise ValueError("no matching filter for attribute '{}'".format(current_filter_attribute))
-        return filter_field.parse(filter_field_name, remaining_filter_attributes, value)
+        current_filter_attribute, *remaining_filter_attribute_path = filter_attributes
+        current_filter_field_name = self.fields_name_map.get(current_filter_attribute)
+        filter_field = self.base_filters[current_filter_field_name]
+        return filter_field.parse([current_filter_field_name], remaining_filter_attribute_path, value)
 
     def _extract_filter_attributes(self, filter_args_key):
         filter_attribute_regex = r'\[(.*?)\]'
