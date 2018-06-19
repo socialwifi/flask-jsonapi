@@ -39,7 +39,7 @@ class ResourceRepositoryListView(ResourceRepositoryViewMixin, resources.Resource
 class ResourceRepositoryViewSet:
     repository = repositories.ResourceRepository()
     schema = descriptors.NotImplementedProperty('schema')
-    filter_schema = filters_schema.FilterSchema({})
+    filter_schema = filters_schema.FilterSchema()
     detail_view_cls = ResourceRepositoryDetailView
     list_view_cls = ResourceRepositoryListView
     view_decorators = ()

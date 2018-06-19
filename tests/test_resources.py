@@ -174,16 +174,16 @@ def test_integration_bad_content_type_header(app, example_schema, example_model)
 
 
 def test_integration_get_filtered_list(app, example_schema, example_model):
+    class ExampleFiltersSchema(filters_schema.FilterSchema):
+        basic = filters_schema.FilterField()
+        listed = filters_schema.ListFilterField()
+        renamed = filters_schema.FilterField(field_name='dumb-name')
+        integer = filters_schema.FilterField(parse_value=int)
+        skipped_filter = filters_schema.FilterField()
+
     class ExampleListView(resources.ResourceList):
         schema = example_schema
-        filter_schema = filters_schema.FilterSchema({
-            'basic': filters_schema.FilterField(),
-            'listed': filters_schema.ListFilterField(),
-            'renamed': filters_schema.FilterField(field_name='dumb-name'),
-            'integer': filters_schema.FilterField(parse_value=int),
-            'skipped_filter': filters_schema.FilterField(),
-
-        })
+        filter_schema = ExampleFiltersSchema()
 
         applied_filters = []
 
