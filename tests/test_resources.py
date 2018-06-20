@@ -177,8 +177,8 @@ def test_integration_get_filtered_list(app, example_schema, example_model):
     class ExampleFiltersSchema(filters_schema.FilterSchema):
         basic = filters_schema.FilterField()
         listed = filters_schema.ListFilterField()
-        renamed = filters_schema.FilterField(field_name='dumb-name')
-        integer = filters_schema.FilterField(parse_value=int)
+        dumb_name = filters_schema.FilterField(attribute='renamed')
+        integer = filters_schema.FilterField(type_=fields.Int)
         skipped_filter = filters_schema.FilterField()
 
     class ExampleListView(resources.ResourceList):

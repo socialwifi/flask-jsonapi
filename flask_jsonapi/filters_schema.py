@@ -1,10 +1,13 @@
 import re
 
 import flask
+from marshmallow import exceptions as ma_exceptions
+from marshmallow_jsonapi import fields as ma_fields
+from marshmallow_jsonapi import schema as ma_schema
+from werkzeug import datastructures
 
 from flask_jsonapi import exceptions
 from flask_jsonapi import utils
-from werkzeug import datastructures
 
 
 class Operators:
@@ -33,11 +36,11 @@ class Operators:
 class FilterField(utils.EqualityMixin):
     default_operator = Operators.EQ
 
-    def __init__(self, *, field_name=None, parse_value=str, operators=None, default_operator=None):
+    def __init__(self, *, attribute=None, type_=ma_fields.Str, operators=None, default_operator=None):
         self.default_operator = default_operator or self.default_operator
         self.operators = operators or [self.default_operator]
-        self.field_name_override = field_name
-        self._parse_value = parse_value
+        self.attribute = attribute
+        self.type_ = type_
 
     def parse(self, processed_filter_path, remaining_filter_attributes, value):
         if len(remaining_filter_attributes) > 1:
@@ -45,15 +48,15 @@ class FilterField(utils.EqualityMixin):
         try:
             value = self.parse_value(value)
             operator = self._extract_operator_if_present(remaining_filter_attributes)
-        except ValueError:
-            raise
+        except ma_exceptions.ValidationError as e:
+            raise ValueError from e
         else:
-            string_path = '.'.join(processed_filter_path)
+            string_path = '__'.join(processed_filter_path)
             filter_attribute = '{}__{}'.format(string_path, operator or '')
             return {filter_attribute: value}
 
     def parse_value(self, value):
-        return self._parse_value(value)
+        return self.type_().deserialize(value)
 
     def _extract_operator_if_present(self, remaining_filter_attributes):
         try:
@@ -69,31 +72,28 @@ class ListFilterField(FilterField):
     default_operator = Operators.IN
 
     def parse_value(self, value_string):
-        return [self._parse_value(part) for part in value_string.split(',')]
+        return [self.type_().deserialize(part) for part in value_string.split(',')]
 
 
 class RelationshipFilterField(FilterField):
-    def __init__(self, fields: dict, field_name=None):
+    def __init__(self, filters_schema, field_name=None, attribute=None):
         self.field_name_override = field_name
-        self.fields = fields
-        self.fields_name_map = FilterFieldNameOverrideMap(fields)
+        self.attribute = attribute
+        self.fields = filters_schema.base_filters
 
     def parse(self, processed_filter_path, remaining_filter_attribute_path, value):
         if len(remaining_filter_attribute_path) == 0:
             raise ValueError("filtering directly by relationship is forbidden")
         current_filter_attribute, *remaining_filter_attributes = remaining_filter_attribute_path
-        current_filter_field_name = self.fields_name_map.get(current_filter_attribute)
-        field = self.fields[current_filter_field_name]
+        filter_field = self.fields[current_filter_attribute]
+        current_filter_field_name = filter_field.attribute or current_filter_attribute
         current_processed_filter_path = [*processed_filter_path, current_filter_field_name]
-        return field.parse(current_processed_filter_path, remaining_filter_attributes, value)
-
-    @classmethod
-    def from_filter_schema(cls, filter_schema, field_name=None):
-        return RelationshipFilterField(field_name=field_name, fields=filter_schema.base_filters)
+        return filter_field.parse(current_processed_filter_path, remaining_filter_attributes, value)
 
 
 class FilterSchemaOptions:
     def __init__(self, meta=None):
+        self.schema = getattr(meta, 'schema', None)
         self.fields = getattr(meta, 'fields', ())
 
 
@@ -125,35 +125,27 @@ class FilterSchemaMeta(type):
         return dict(filters)
 
 
-class FilterFieldNameOverrideMap:
-    def __init__(self, fields):
-        self.fields = fields
-
-    def get(self, attribute):
-        try:
-            filter_field_name = self.field_name_override_map[attribute]
-        except KeyError:
-            raise ValueError("no matching filter for attribute '{}'".format(attribute))
-        else:
-            return filter_field_name
-
-    @property
-    def field_name_override_map(self):
-        return {field.field_name_override or name: name for name, field in self.fields.items()}
-
-
 class FilterSchemaBase:
-    def __init__(self):
-        self.fields_name_map = FilterFieldNameOverrideMap(self.base_filters)
-
     @classmethod
     def get_filters(cls):
         filters = {}
         fields = cls.get_fields()
+        schema = cls.get_schema()
+        if len(fields) != 0 and schema is None:
+            raise ValueError('`fields` and `schema` attributes must be provided.')
         for field_name in fields:
-            filters[field_name] = FilterField(field_name=field_name)
+            attribute = utils.get_model_field(schema, field_name)
+            field_cls = utils.get_field_class(schema, field_name)
+            filters[field_name] = FilterField(attribute=attribute, type_=field_cls)
         filters.update(cls.declared_filters)
         return filters
+
+    @classmethod
+    def get_schema(cls):
+        schema = cls._meta.schema
+        if schema is not None and not issubclass(schema, ma_schema.Schema):
+            raise ValueError('`schema` option must be a `marshmallow_jsonapi.Schema` subclass.')
+        return schema
 
     @classmethod
     def get_fields(cls):
@@ -167,7 +159,7 @@ class FilterSchemaBase:
             try:
                 parsed_filter = self._process_filter(key, value)
                 result.update(parsed_filter)
-            except ValueError as exc:
+            except (ValueError, KeyError) as exc:
                 raise exceptions.InvalidFilters("Error parsing '{}={}': {}".format(key, value, exc))
         return result
 
@@ -182,18 +174,15 @@ class FilterSchemaBase:
     def _process_filter(self, key, value):
         filter_attributes = self._extract_filter_attributes(key)
         current_filter_attribute, *remaining_filter_attribute_path = filter_attributes
-        current_filter_field_name = self.fields_name_map.get(current_filter_attribute)
-        filter_field = self.base_filters[current_filter_field_name]
+        filter_field = self.base_filters[current_filter_attribute]
+        current_filter_field_name = filter_field.attribute or current_filter_attribute
         return filter_field.parse([current_filter_field_name], remaining_filter_attribute_path, value)
 
     def _extract_filter_attributes(self, filter_args_key):
         filter_attribute_regex = r'\[(.*?)\]'
         attributes = re.findall(filter_attribute_regex, filter_args_key)
+        attributes = map(lambda x: x.replace('-', '_'), attributes)
         return tuple(attributes)
-
-    @property
-    def field_name_override_map(self):
-        return {field.field_name_override or name: name for name, field in self.base_filters.items()}
 
 
 class FilterSchema(FilterSchemaBase, metaclass=FilterSchemaMeta):
