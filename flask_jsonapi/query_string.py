@@ -6,15 +6,17 @@ from six.moves.urllib import parse
 from flask_jsonapi import exceptions
 
 
-class Pagination:
+class QueryStringParserBase:
     def parse(self):
         raise NotImplementedError
 
+
+class PaginationBase(QueryStringParserBase):
     def get_links(self, *args, **kwargs):
         raise NotImplementedError
 
 
-class SizeNumberPagination(Pagination):
+class SizeNumberPagination(PaginationBase):
     def parse(self):
         size = flask.request.args.get('page[size]')
         number = flask.request.args.get('page[number]')
@@ -48,3 +50,20 @@ class SizeNumberPagination(Pagination):
             'next': format_query_string.format(next_page) if next_page else None,
             'last': format_query_string.format(last_page),
         }
+
+
+class IncludeParser:
+    def __init__(self, schema):
+        self.schema_object = schema()
+
+    def parse(self):
+        include_parameter = flask.request.args.get('include')
+        if include_parameter:
+            include_fields = tuple(include_parameter.split(','))
+            try:
+                self.schema_object.check_relations(include_fields)
+            except ValueError as exc:
+                raise exceptions.InvalidInclude(detail=str(exc))
+            return include_fields
+        else:
+            return tuple()

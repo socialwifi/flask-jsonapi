@@ -26,6 +26,7 @@ class ResourceBase(views.View):
     def __init__(self, *, schema=None):
         if schema:
             self.schema = schema
+        self.include_parser = query_string.IncludeParser(schema=self.schema)
 
     @classmethod
     def as_view(cls, name, *class_args, **class_kwargs):
@@ -53,18 +54,6 @@ class ResourceBase(views.View):
         )
         return helpers.make_response('Method Not Allowed.', http.HTTPStatus.METHOD_NOT_ALLOWED)
 
-    def _check_include_fields(self):
-        include_parameter = flask.request.args.get('include')
-        if include_parameter:
-            include_fields = tuple(include_parameter.split(','))
-            try:
-                self.schema().check_relations(include_fields)
-            except ValueError as exc:
-                raise exceptions.InvalidInclude(detail=str(exc))
-            return include_fields
-        else:
-            return tuple()
-
 
 class ResourceDetail(ResourceBase):
     methods = ['GET', 'DELETE', 'PATCH']
@@ -72,7 +61,7 @@ class ResourceDetail(ResourceBase):
 
     def get(self, *args, **kwargs):
         resource = self.read(self.resource_id)
-        include_fields = self._check_include_fields()
+        include_fields = self.include_parser.parse()
         try:
             data, errors = self.schema(include_data=include_fields).dump(resource)
         except marshmallow.ValidationError as e:
@@ -132,7 +121,7 @@ class ResourceList(ResourceBase):
         parsed_pagination = self.pagination.parse()
         objects_list = self.read_many(filters=parsed_filters,
                                       pagination=parsed_pagination)
-        include_fields = self._check_include_fields()
+        include_fields = self.include_parser.parse()
         try:
             objects, errors = self.schema(many=True, include_data=include_fields).dump(objects_list)
         except marshmallow.ValidationError as e:
