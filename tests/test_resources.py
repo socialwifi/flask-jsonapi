@@ -199,10 +199,10 @@ def test_integration_get_filtered_list(app, example_schema, example_model):
     )
     assert response.status_code == 200
     assert ExampleListView.applied_filters == {
-        'basic__eq': 'text',
-        'listed__in': ['first', 'second'],
-        'renamed__eq': 'another',
-        'integer__eq': 3,
+        'basic': 'text',
+        'listed': ['first', 'second'],
+        'renamed': 'another',
+        'integer': 3,
     }
 
 

@@ -34,7 +34,7 @@ class Operators:
 
 
 class FilterField(utils.EqualityMixin):
-    default_operator = Operators.EQ
+    default_operator = None
 
     def __init__(self, *, attribute=None, type_=ma_fields.Str, operators=None, default_operator=None):
         self.default_operator = default_operator or self.default_operator
@@ -51,8 +51,9 @@ class FilterField(utils.EqualityMixin):
         except ma_exceptions.ValidationError as e:
             raise ValueError from e
         else:
-            string_path = '__'.join(processed_filter_path)
-            filter_attribute = '{}__{}'.format(string_path, operator or '')
+            filter_attribute = '__'.join(processed_filter_path)
+            if operator is not None:
+                filter_attribute = '{}__{}'.format(filter_attribute, operator or '')
             return {filter_attribute: value}
 
     def parse_value(self, value):
@@ -69,8 +70,6 @@ class FilterField(utils.EqualityMixin):
 
 
 class ListFilterField(FilterField):
-    default_operator = Operators.IN
-
     def parse_value(self, value_string):
         return [self.type_().deserialize(part) for part in value_string.split(',')]
 

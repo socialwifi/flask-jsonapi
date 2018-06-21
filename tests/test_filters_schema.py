@@ -65,10 +65,10 @@ class TestFiltersSchemaBasic:
                                       '&filter[integer]=3'):
             parsed_filters = ExampleFiltersSchema().parse()
             assert parsed_filters == {
-                'basic__eq': 'text',
-                'listed__in': ['first', 'second'],
-                'renamed__eq': 'another',
-                'integer__eq': 3,
+                'basic': 'text',
+                'listed': ['first', 'second'],
+                'renamed': 'another',
+                'integer': 3,
             }
 
     def test_invalid_filter(self, app):
@@ -85,7 +85,7 @@ class TestFiltersSchemaBasic:
 
         with app.test_request_context('?filter[identifier]=11111111-1111-1111-1111-111111111111'):
             parsed_filters = ExampleFiltersSchema().parse()
-            assert parsed_filters == {'identifier__eq': uuid.UUID('11111111-1111-1111-1111-111111111111')}
+            assert parsed_filters == {'identifier': uuid.UUID('11111111-1111-1111-1111-111111111111')}
 
     def test_parse_value_error(self, app):
         class ExampleFiltersSchema(filters_schema.FilterSchema):
@@ -155,12 +155,12 @@ class TestFiltersSchemaBasic:
                                       '&filter[other-related]=789'):
             parsed_filters = ExampleFiltersSchema().parse()
             assert parsed_filters == {
-                'id__eq': uuid.UUID('11111111-1111-1111-1111-111111111111'),
-                'first_body__eq': 'first-text',
-                'second_body__eq': 'second-text',
-                'active__eq': True,
-                'related_id__eq': '456',
-                'other_related__id__eq': '789',
+                'id': uuid.UUID('11111111-1111-1111-1111-111111111111'),
+                'first_body': 'first-text',
+                'second_body': 'second-text',
+                'active': True,
+                'related_id': '456',
+                'other_related__id': '789',
             }
 
 
@@ -182,6 +182,6 @@ class TestFiltersSchemaRelationship:
                                       '&filter[relationship][attribute]=text'):
             parsed_filters = ThirdFiltersSchema().parse()
             assert parsed_filters == {
-                'relationship__renamed_relationship__id__eq': '123',
-                'relationship__attribute__eq': 'text',
+                'relationship__renamed_relationship__id': '123',
+                'relationship__attribute': 'text',
             }
