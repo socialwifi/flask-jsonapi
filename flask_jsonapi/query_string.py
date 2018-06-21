@@ -2,6 +2,7 @@ import math
 
 import flask
 from six.moves.urllib import parse
+from werkzeug import datastructures
 
 from flask_jsonapi import exceptions
 
@@ -67,3 +68,30 @@ class IncludeParser:
             return include_fields
         else:
             return tuple()
+
+
+class SparseFieldsParser:
+    def __init__(self, schema):
+        self.schema_object = schema()
+
+    @property
+    def request_filters(self) -> datastructures.MultiDict:
+        return datastructures.MultiDict(
+            [(key, value) for key, value
+             in flask.request.args.items(multi=True)
+             if key.startswith('fields')]
+        )
+
+    def parse(self):
+        sparse_fields = []
+        for key, value in self.request_filters.items(multi=True):
+            resource = key.replace('fields[', '').replace(']', '')
+            fields_list = value.replace('-', '_').split(',')
+            if resource == self.schema_object.opts.type_:
+                field_paths = fields_list
+            else:
+                field_paths = ['{}.{}'.format(resource.replace('-', '_'), value) for value in fields_list]
+            sparse_fields += field_paths
+        if not sparse_fields:
+            return None
+        return tuple(sparse_fields)

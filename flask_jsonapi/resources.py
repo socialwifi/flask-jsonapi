@@ -1,7 +1,6 @@
 import http
 import logging
 
-import flask
 import marshmallow
 from flask import helpers
 from flask import request
@@ -27,6 +26,7 @@ class ResourceBase(views.View):
         if schema:
             self.schema = schema
         self.include_parser = query_string.IncludeParser(schema=self.schema)
+        self.sparse_fields_parser = query_string.SparseFieldsParser(schema=self.schema)
 
     @classmethod
     def as_view(cls, name, *class_args, **class_kwargs):
@@ -62,8 +62,9 @@ class ResourceDetail(ResourceBase):
     def get(self, *args, **kwargs):
         resource = self.read(self.resource_id)
         include_fields = self.include_parser.parse()
+        sparse_fields = self.sparse_fields_parser.parse()
         try:
-            data, errors = self.schema(include_data=include_fields).dump(resource)
+            data, errors = self.schema(include_data=include_fields, only=sparse_fields).dump(resource)
         except marshmallow.ValidationError as e:
             return response.JsonApiErrorResponse.from_marshmallow_errors(e.messages)
         else:
@@ -122,10 +123,18 @@ class ResourceList(ResourceBase):
         objects_list = self.read_many(filters=parsed_filters,
                                       pagination=parsed_pagination)
         include_fields = self.include_parser.parse()
+        sparse_fields = self.sparse_fields_parser.parse()
         try:
-            objects, errors = self.schema(many=True, include_data=include_fields).dump(objects_list)
+            objects, errors = self.schema(
+                many=True, include_data=include_fields, only=sparse_fields).dump(objects_list)
         except marshmallow.ValidationError as e:
             return response.JsonApiErrorResponse.from_marshmallow_errors(e.messages)
+        except (AttributeError, KeyError, ValueError) as e:
+            logger.error(
+                'Error Processing Request',
+                extra={'status_code': http.HTTPStatus.BAD_REQUEST, 'request': request, 'exception': e}
+            )
+            return helpers.make_response('Error Processing Request', http.HTTPStatus.BAD_REQUEST)
         else:
             if errors:
                 return response.JsonApiErrorResponse.from_marshmallow_errors(errors)
