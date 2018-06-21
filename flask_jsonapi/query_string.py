@@ -59,7 +59,7 @@ class IncludeParser:
     def parse(self):
         include_parameter = flask.request.args.get('include')
         if include_parameter:
-            include_fields = tuple(include_parameter.split(','))
+            include_fields = tuple(include_parameter.replace('-', '_').split(','))
             try:
                 self.schema_object.check_relations(include_fields)
             except ValueError as exc:
