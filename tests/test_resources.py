@@ -185,10 +185,10 @@ def test_integration_get_filtered_list(app, example_schema, example_model):
         schema = example_schema
         filter_schema = ExampleFiltersSchema()
 
-        applied_filters = []
+        applied_filters = {}
 
         def read_many(self, filters, pagination):
-            self.applied_filters.append(filters)
+            self.applied_filters.update(filters)
             return []
 
     application_api = api.Api(app)
@@ -198,12 +198,12 @@ def test_integration_get_filtered_list(app, example_schema, example_model):
         headers=JSONAPI_HEADERS
     )
     assert response.status_code == 200
-    assert ExampleListView.applied_filters == [{
-        'basic': 'text',
-        'listed': ['first', 'second'],
-        'renamed': 'another',
-        'integer': 3,
-    }]
+    assert ExampleListView.applied_filters == {
+        'basic__eq': 'text',
+        'listed__in': ['first', 'second'],
+        'renamed__eq': 'another',
+        'integer__eq': 3,
+    }
 
 
 def test_integration_pagination(app, example_schema):
