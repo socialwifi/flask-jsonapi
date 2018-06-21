@@ -4,6 +4,8 @@ import sqlalchemy
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
 
+from flask_jsonapi.utils import sqlalchemy_django_query
+
 
 TEST_DATABASE_URI = 'sqlite://'
 
@@ -33,7 +35,7 @@ def db_session(db_engine):
 @pytest.fixture
 def setup_db_schema(request, db_engine, db_session):
     model_base = request.param
-    model_base.query = db_session.query_property()
+    model_base.query = db_session.query_property(sqlalchemy_django_query.DjangoQuery)
     model_base.metadata.create_all(db_engine)
     yield
     model_base.metadata.drop_all(db_engine)
