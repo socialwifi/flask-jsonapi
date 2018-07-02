@@ -8,7 +8,9 @@ import marshmallow_jsonapi
 import pytest
 from marshmallow_jsonapi import fields
 
-from flask_jsonapi import api, query_string
+from flask_jsonapi import api
+from flask_jsonapi import exceptions
+from flask_jsonapi import query_string
 from flask_jsonapi import resource_repository_views
 
 JSONAPI_HEADERS = {'content-type': 'application/vnd.api+json', 'accept': 'application/vnd.api+json'}
@@ -145,7 +147,7 @@ class TestSparseFields:
         parser = query_string.SparseFieldsParser(schema=ParentSchema)
         with app.test_request_context('/examples/?fields[parents]=id,name&fields[children]=name'):
             result = parser.parse()
-            assert result == ('id', 'name', 'children.name')
+            assert sorted(result) == ['children.name', 'id', 'name']
 
     def test_get_parent_detail_with_include_data(self, app):
         application_api = api.Api(app)
@@ -158,6 +160,7 @@ class TestSparseFields:
             headers=JSONAPI_HEADERS
         )
         result = json.loads(response.data.decode('utf-8'))
+        result['included'].sort(key=lambda x: x['attributes']['name'])
         expected = {
            'data': {
               'type': 'parents',
@@ -182,14 +185,14 @@ class TestSparseFields:
                  'type': 'childs',
                  'id': mock.ANY,
                  'attributes': {
-                    'name': 'Cain'
+                     'name': 'Abel'
                  }
               },
               {
                  'type': 'childs',
                  'id': mock.ANY,
                  'attributes': {
-                    'name': 'Abel'
+                     'name': 'Cain'
                  }
               }
            ],
@@ -199,18 +202,42 @@ class TestSparseFields:
         }
         assert expected == result
 
-    def test_invalid_fields_exceptions(self, app):
+    def test_invalid_type(self, app):
         parser = query_string.SparseFieldsParser(schema=ParentSchema)
-        objects_list = ParentDetailRepository().get_detail('1234')
         with pytest.raises(KeyError):
             with app.test_request_context('/parents/?fields[bad-type]=id'):
                 sparse_fields = parser.parse()
                 ParentSchema(strict=True, many=True, only=sparse_fields)
+
+    def test_invalid_field(self, app):
+        parser = query_string.SparseFieldsParser(schema=ParentSchema)
+        objects_list = ParentDetailRepository().get_detail('1234')
         with pytest.raises(AttributeError):
             with app.test_request_context('/parents/?fields[parents]=id,bad_field'):
                 sparse_fields = parser.parse()
                 ParentSchema(strict=True, many=True, only=sparse_fields).dump(objects_list)
+
+    def test_no_id_field_specified(self, app):
+        parser = query_string.SparseFieldsParser(schema=ParentSchema)
         with pytest.raises(ValueError):
             with app.test_request_context('/parents/?fields[parents]=no_id_field'):
                 sparse_fields = parser.parse()
                 ParentSchema(strict=True, many=True, only=sparse_fields)
+
+    def test_bad_resource(self, app):
+        parser = query_string.SparseFieldsParser(schema=ParentSchema)
+        with pytest.raises(exceptions.InvalidField):
+            with app.test_request_context('/parents/?fields[par]ents]=no_id_field'):
+                parser.parse()
+
+    def test_bad_fields(self, app):
+        parser = query_string.SparseFieldsParser(schema=ParentSchema)
+        with pytest.raises(exceptions.InvalidField):
+            with app.test_request_context('/parents/?fields[parents]=id,ha$h'):
+                parser.parse()
+
+    def test_no_brackets(self, app):
+        parser = query_string.SparseFieldsParser(schema=ParentSchema)
+        with pytest.raises(exceptions.InvalidField):
+            with app.test_request_context('/parents/?fields[parents=id,ha$h'):
+                parser.parse()

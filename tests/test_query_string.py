@@ -1,6 +1,4 @@
-import marshmallow_jsonapi
 import pytest
-from marshmallow_jsonapi import fields
 
 from flask_jsonapi import exceptions
 from flask_jsonapi import query_string
