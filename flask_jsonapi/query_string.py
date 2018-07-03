@@ -1,4 +1,6 @@
+import itertools
 import math
+import re
 
 import flask
 from six.moves.urllib import parse
@@ -6,10 +8,12 @@ from six.moves.urllib import parse
 from flask_jsonapi import exceptions
 
 
-class Pagination:
+class QueryStringParser:
     def parse(self):
         raise NotImplementedError
 
+
+class Pagination(QueryStringParser):
     def get_links(self, *args, **kwargs):
         raise NotImplementedError
 
@@ -48,3 +52,65 @@ class SizeNumberPagination(Pagination):
             'next': format_query_string.format(next_page) if next_page else None,
             'last': format_query_string.format(last_page),
         }
+
+
+class IncludeParser:
+    def __init__(self, schema):
+        self.schema = schema
+
+    def parse(self):
+        include_parameter = flask.request.args.get('include')
+        if include_parameter:
+            include_fields = tuple(include_parameter.replace('-', '_').split(','))
+            try:
+                self.schema().check_relations(include_fields)
+            except ValueError as exc:
+                raise exceptions.InvalidInclude(detail=str(exc))
+            return include_fields
+        else:
+            return tuple()
+
+
+class SparseFieldsParser:
+    def __init__(self, schema):
+        self.schema = schema
+
+    def parse(self):
+        sparse_fields = tuple(itertools.chain.from_iterable(self.get_sparse_fields()))
+        if not sparse_fields:
+            return None
+        return sparse_fields
+
+    def get_sparse_fields(self):
+        for key, value in self.get_request_fields():
+            resource = self.extract_resource(key)
+            fields = self.extract_fields(value)
+            if resource == self.schema.opts.type_:
+                yield fields
+            else:
+                yield self.format_resource_paths(resource, fields)
+
+    def get_request_fields(self):
+        for key, value in flask.request.args.items(multi=True):
+            if key.startswith('fields'):
+                yield key, value
+
+    def extract_resource(self, key):
+        resource_regex = r'fields\[([a-zA-Z0-9\-\_\ ]+)\]'
+        match = re.fullmatch(resource_regex, key)
+        if match is None:
+            raise exceptions.InvalidField(detail=key)
+        resource = match.group(1)
+        resource = resource.replace('-', '_')
+        return resource
+
+    def extract_fields(self, value):
+        fields_regex = r'([a-zA-Z0-9\-\_\ ]+,?)+'
+        match = re.fullmatch(fields_regex, value)
+        if match is None:
+            raise exceptions.InvalidField(detail=value)
+        fields = value.replace('-', '_').split(',')
+        return fields
+
+    def format_resource_paths(self, resource, fields):
+        return ['{}.{}'.format(resource, value) for value in fields]

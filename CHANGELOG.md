@@ -1,7 +1,7 @@
 0.8.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Added sparse fields.
 
 
 0.8.0 (2018-06-11)
