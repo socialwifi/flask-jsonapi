@@ -5,11 +5,11 @@ from setuptools import find_packages
 
 setup(
     name='flask-jsonapi',
-    version='0.7.1.dev0',
+    version='0.8.1.dev0',
     description='JSONAPI 1.0 implementation for Flask.',
     author='Social WiFi',
     author_email='it@socialwifi.com',
-    url='https://github.com/socialwifi/flask_jsonapi',
+    url='https://github.com/socialwifi/flask-jsonapi',
     packages=find_packages(exclude=['tests']),
     install_requires=[str(ir.req) for ir in parse_requirements('base_requirements.txt', session=False)],
     setup_requires=['pytest-runner'],
