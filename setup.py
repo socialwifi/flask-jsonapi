@@ -1,4 +1,7 @@
-from pip.req import parse_requirements
+try:
+    from pip._internal.req import parse_requirements
+except ImportError:
+    from pip.req import parse_requirements
 from setuptools import setup
 from setuptools import find_packages
 
