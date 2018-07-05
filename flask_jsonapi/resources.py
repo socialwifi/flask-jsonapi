@@ -183,3 +183,114 @@ class ResourceList(ResourceBase):
 
     def create(self, data, **kwargs):
         raise NotImplementedError
+
+
+class RelationshipBase(ResourceBase):
+    parent_id_kwarg = 'id'
+
+    def get(self, *args, **kwargs):
+        resource = self.read(self.parent_id)
+        try:
+            data, errors = self.computed_schema.dump(resource)
+        except marshmallow.ValidationError as e:
+            return response.JsonApiErrorResponse.from_marshmallow_errors(e.messages)
+        else:
+            if errors:
+                return response.JsonApiErrorResponse.from_marshmallow_errors(errors)
+            else:
+                return response.JsonApiResponse(data)
+
+    def patch(self, *args, **kwargs):
+        try:
+            data, errors = self.computed_schema.load(request.get_json())
+        except marshmallow.ValidationError as e:
+            return response.JsonApiErrorResponse.from_marshmallow_errors(e.messages)
+        else:
+            if errors:
+                return response.JsonApiErrorResponse.from_marshmallow_errors(errors)
+            else:
+                resource = self.update(self.parent_id, data)
+                if resource:
+                    return response.JsonApiResponse(self.computed_schema.dump(resource).data)
+                else:
+                    return response.EmptyResponse()
+
+    @property
+    def parent_id(self):
+        return self.kwargs[self.parent_id_kwarg]
+
+    @property
+    def computed_schema(self):
+        raise NotImplementedError
+
+    def read(self, parent_id):
+        raise NotImplementedError
+
+    def update(self, parent_id, data):
+        raise NotImplementedError
+
+
+class ToOneRelationship(RelationshipBase):
+    methods = ['GET', 'PATCH']
+
+    def patch(self, *args, **kwargs):
+        json_data = request.get_json()
+        if json_data.get('data') is None:
+            resource = self.destroy(self.parent_id)
+            if resource:
+                return response.JsonApiResponse(self.computed_schema.dump(resource).data)
+            else:
+                return response.EmptyResponse()
+        else:
+            return super().patch(*args, **kwargs)
+
+    @property
+    def computed_schema(self):
+        return self.schema(partial=True, only=('id',))
+
+    def destroy(self, id):
+        raise NotImplementedError
+
+
+class ToManyRelationship(RelationshipBase):
+    methods = ['GET', 'POST', 'DELETE', 'PATCH']
+
+    def post(self, *args, **kwargs):
+        try:
+            data, errors = self.computed_schema.load(request.get_json())
+        except marshmallow.ValidationError as e:
+            return response.JsonApiErrorResponse.from_marshmallow_errors(e.messages)
+        else:
+            if errors:
+                return response.JsonApiErrorResponse.from_marshmallow_errors(errors)
+            else:
+                resource = self.create(self.parent_id, data)
+                if resource:
+                    return response.JsonApiResponse(self.computed_schema.dump(resource).data)
+                else:
+                    return response.EmptyResponse()
+
+    def delete(self, *args, **kwargs):
+        try:
+            data, errors = self.computed_schema.load(request.get_json())
+        except marshmallow.ValidationError as e:
+            return response.JsonApiErrorResponse.from_marshmallow_errors(e.messages)
+        else:
+            if errors:
+                return response.JsonApiErrorResponse.from_marshmallow_errors(errors)
+            else:
+                resource = self.destroy(self.parent_id, data)
+                if resource:
+                    return response.JsonApiResponse(self.computed_schema.dump(resource).data)
+                else:
+                    return response.EmptyResponse()
+
+    @property
+    def computed_schema(self):
+        return self.schema(many=True, partial=True, only=('id',))
+
+    def create(self, parent_id, data):
+        raise NotImplementedError
+
+    def destroy(self, parent_id, data):
+        raise NotImplementedError
