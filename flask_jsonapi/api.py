@@ -22,6 +22,14 @@ class Api:
         detail_view = repository.as_detail_view('{}_detail'.format(base_view_name))
         list_view = repository.as_list_view('{}_list'.format(base_view_name))
         for list_url in urls:
-            detail_url = re.sub(r'(/?)$', r'/<id>\g<1>', list_url)
+            detail_url = self.get_detail_url(list_url)
             self.app.add_url_rule(list_url, view_func=list_view, **url_rule_options or dict())
             self.app.add_url_rule(detail_url, view_func=detail_view, **url_rule_options or dict())
+
+    @staticmethod
+    def get_detail_url(list_url):
+        suffix = '<id>'
+        if list_url.endswith('/'):
+            return '{}{}/'.format(list_url, suffix)
+        else:
+            return '{}/{}'.format(list_url, suffix)
