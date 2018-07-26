@@ -83,3 +83,39 @@ class ResourceRepositoryViewSet:
             'repository': self.repository,
             **(self.view_kwargs or {})
         }
+
+
+class RelationshipRepositoryViewMixin:
+    def __init__(self, *, repository=None, **kwargs):
+        super().__init__(**kwargs)
+        if repository:
+            self.repository = repository
+
+
+class ToOneRelationshipRepositoryView(RelationshipRepositoryViewMixin, resources.ToOneRelationship):
+    repository = repositories.ToOneRelationshipRepository()
+
+    def read(self, parent_id):
+        return self.repository.get_detail(parent_id)
+
+    def update(self, parent_id, data):
+        return self.repository.update(parent_id, data)
+
+    def destroy(self, parent_id):
+        return self.repository.delete(parent_id)
+
+
+class ToManyRelationshipRepositoryView(RelationshipRepositoryViewMixin, resources.ToManyRelationship):
+    repository = repositories.ToManyRelationshipRepository()
+
+    def read(self, parent_id):
+        return self.repository.get_list(parent_id)
+
+    def create(self, parent_id, data):
+        return self.repository.create(parent_id, data)
+
+    def update(self, parent_id, data):
+        return self.repository.update(parent_id, data)
+
+    def destroy(self, parent_id, data):
+        return self.repository.delete(parent_id, data)

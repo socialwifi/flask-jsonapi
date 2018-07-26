@@ -5,6 +5,8 @@ from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
 
 
+JSONAPI_HEADERS = {'content-type': 'application/vnd.api+json', 'accept': 'application/vnd.api+json'}
+
 TEST_DATABASE_URI = 'sqlite://'
 
 

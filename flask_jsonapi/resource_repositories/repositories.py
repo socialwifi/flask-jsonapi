@@ -25,3 +25,28 @@ class ResourceRepository:
     @contextmanager
     def begin_transaction(self):
         yield
+
+
+class ToOneRelationshipRepository:
+    def get_detail(self, parent_id):
+        raise exceptions.NotImplementedMethod('Getting relationship is not implemented.')
+
+    def update(self, parent_id, data):
+        raise exceptions.NotImplementedMethod('Updating relationship is not implemented.')
+
+    def delete(self, parent_id):
+        raise exceptions.NotImplementedMethod('Deleting relationship is not implemented.')
+
+
+class ToManyRelationshipRepository:
+    def get_list(self, parent_id):
+        raise exceptions.NotImplementedMethod('Getting relationship is not implemented.')
+
+    def create(self, parent_id, data):
+        raise exceptions.NotImplementedMethod('Creating relationship is not implemented.')
+
+    def update(self, parent_id, data):
+        raise exceptions.NotImplementedMethod('Updating relationship is not implemented.')
+
+    def delete(self, parent_id, data):
+        raise exceptions.NotImplementedMethod('Deleting relationship is not implemented.')
