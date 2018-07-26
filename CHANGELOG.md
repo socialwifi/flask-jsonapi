@@ -1,7 +1,7 @@
 0.8.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Support Python 3.7.0.
 
 
 0.8.1 (2018-07-03)
