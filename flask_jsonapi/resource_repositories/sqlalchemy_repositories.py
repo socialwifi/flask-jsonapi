@@ -27,12 +27,13 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
             logger.exception(error)
             raise ForbiddenError(detail='{} could not be created.'.format(self.instance_name.capitalize()))
 
-    def get_list(self, filters=None, pagination=None):
+    def get_list(self, filters=None, pagination=None, sorts=None):
         try:
             query = self.get_query()
             filtered_query = self.apply_filters(query, filters)
             paginated_query = self.apply_pagination(filtered_query, pagination)
-            return paginated_query.all()
+            sort_query = self.apply_sort(paginated_query, sorts)
+            return sort_query.all()
         except exc.SQLAlchemyError as error:
             logger.exception(error)
             raise ForbiddenError(detail='Error while getting {} list.'.format(self.instance_name))
@@ -87,6 +88,22 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
         number = pagination.get('number')
         if size is not None and number is not None:
             return query.limit(size).offset(size * (number - 1))
+        else:
+            return query
+
+    def apply_sort(self, query, sorts):
+        if sorts:
+            for sort in sorts:
+                query = self.sort_query(query, sort['field'], sort['order'])
+        return query
+
+    def sort_query(self, query, field_name, order):
+        try:
+            field = getattr(self.model, field_name)
+            field_ordered = getattr(field, order)()
+            query = query.order_by(field_ordered)
+        except AttributeError:
+            raise exceptions.InvalidSort("{} has no attribute {}".format(self.model.__name__, field_name))
         else:
             return query
 

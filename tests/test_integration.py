@@ -84,7 +84,7 @@ class ParentRepository(repositories.ResourceRepository):
         database_simulation[data['id']] = obj
         return obj
 
-    def get_list(self, filters=None, pagination=None):
+    def get_list(self, filters=None, pagination=None, sorts=None):
         return database_simulation.values()
 
 
