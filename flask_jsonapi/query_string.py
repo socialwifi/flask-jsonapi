@@ -1,8 +1,10 @@
 import itertools
 import math
 import re
+import typing
 
 import flask
+from marshmallow_jsonapi.fields import Relationship
 from six.moves.urllib import parse
 
 from flask_jsonapi import exceptions
@@ -11,6 +13,41 @@ from flask_jsonapi import exceptions
 class QueryStringParser:
     def parse(self):
         raise NotImplementedError
+
+
+class SortParser(QueryStringParser):
+    def __init__(self, schema):
+        self.schema = schema
+
+    def parse(self)->typing.List[typing.Dict[str, str]]:
+        try:
+            sort_fields = flask.request.args.get('sort').split(',')
+            sorting_results = []
+            for sort_field in sort_fields:
+                result = self.get_result(sort_field)
+                sorting_results.append(result)
+            return sorting_results
+        except AttributeError:
+            return []
+
+    def get_result(self, sort_field):
+        field_name = sort_field.replace('-', '')
+        self.validate_field(field_name)
+        field = self.get_field(field_name)
+        order = 'desc' if sort_field.startswith('-') else 'asc'
+        return {'field': field, 'order': order}
+
+    def get_field(self, field_name: str)-> str:
+        field_attribute = self.schema._declared_fields[field_name].attribute
+        return field_name if field_attribute is None else field_attribute
+
+    def validate_field(self, field: str):
+        try:
+            field = self.schema._declared_fields[field]
+            if isinstance(field, Relationship):
+                raise exceptions.InvalidSort("You can't sort on {} because it is a relationship field".format(field))
+        except KeyError:
+            raise exceptions.InvalidSort("{} has no attribute {}".format(self.schema.__name__, field))
 
 
 class Pagination(QueryStringParser):
