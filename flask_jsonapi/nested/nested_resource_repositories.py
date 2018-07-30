@@ -6,7 +6,7 @@ from flask_jsonapi.nested import nested_repository
 
 class NestedResourceRepositoryListView(resource_repository_views.ResourceRepositoryViewMixin,
                                        flask_jsonapi.nested.nested_resources.NestedResourceList):
-    def read_many(self, filters, pagination):
+    def read_many(self, filters, pagination, sorts):
         return self.repository.get_list(filters, pagination)
 
     def create(self, data, **kwargs):
