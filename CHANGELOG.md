@@ -1,7 +1,7 @@
 0.8.3 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Support filtering.
 
 
 0.8.2 (2018-07-26)
