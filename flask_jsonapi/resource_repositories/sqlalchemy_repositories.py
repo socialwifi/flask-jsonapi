@@ -5,8 +5,9 @@ from sqlalchemy import func
 from sqlalchemy.orm import exc as orm_exc
 
 from flask_jsonapi import exceptions
-from flask_jsonapi.resource_repositories import repositories
 from flask_jsonapi.exceptions import ForbiddenError
+from flask_jsonapi.resource_repositories import repositories
+from flask_jsonapi.utils import sqlalchemy_django_query
 
 logger = logging.getLogger(__name__)
 
@@ -69,16 +70,16 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
             raise ForbiddenError(detail='Error while updating {}.'.format(self.instance_name))
 
     def get_query(self):
-        return self.model.query
+        return sqlalchemy_django_query.DjangoQuery(self.model, session=self.session())
 
     def apply_filters(self, query, filters):
         filters = filters or {}
-        for filter, value in filters.items():
-            if filter in self.filter_methods_map:
-                filter_method = self.filter_methods_map[filter]
+        filters = filters.copy()
+        for filter, filter_method in self.filter_methods_map.items():
+            if filter in filters:
+                value = filters.pop(filter)
                 query = query.filter(filter_method(value))
-            else:
-                query.filter_by(**{filter: value})
+        query = query.filter_by(**filters)
         return query
 
     def apply_pagination(self, query, pagination):

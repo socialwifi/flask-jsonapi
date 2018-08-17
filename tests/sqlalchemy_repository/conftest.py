@@ -4,7 +4,6 @@ import sqlalchemy
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
 
-
 TEST_DATABASE_URI = 'sqlite://'
 
 
