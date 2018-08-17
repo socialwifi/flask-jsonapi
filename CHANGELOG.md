@@ -1,4 +1,4 @@
-0.8.3 (unreleased)
+0.8.3 (2018-08-17)
 ------------------
 
 - Support filtering.
