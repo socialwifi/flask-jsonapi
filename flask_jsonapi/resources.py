@@ -109,7 +109,7 @@ class ResourceDetail(ResourceBase):
 
 class ResourceList(ResourceBase):
     methods = ['GET', 'POST']
-    filter_schema = filters_schema.FilterSchema({})
+    filter_schema = filters_schema.FilterSchema()
     pagination = query_string.SizeNumberPagination()
 
     def __init__(self, *, filter_schema=None, **kwargs):
