@@ -57,6 +57,8 @@ class FilterField(utils.EqualityMixin):
             return {filter_attribute: value}
 
     def parse_value(self, value):
+        if value == '':
+            raise ValueError("empty filter value provided ")
         return self.type_().deserialize(value)
 
     def _extract_operator_if_present(self, remaining_filter_attributes):
