@@ -28,10 +28,11 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
             logger.exception(error)
             raise ForbiddenError(detail='{} could not be created.'.format(self.instance_name.capitalize()))
 
-    def get_list(self, filters=None, pagination=None):
+    def get_list(self, filters=None, sorting=None, pagination=None):
         try:
             query = self.get_query()
             query = self.apply_filters(query, filters)
+            query = self.apply_sorts(query, sorting)
             query = self.apply_pagination(query, pagination)
             return query.all()
         except exc.SQLAlchemyError as error:
@@ -90,6 +91,14 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
             return query.limit(size).offset(size * (number - 1))
         else:
             return query
+
+    def apply_sorts(self, query, sorting):
+        sorting = sorting or []
+        try:
+            query = query.order_by(*sorting)
+        except exc.InvalidRequestError:
+            raise exceptions.InvalidSort("Invalid sort fields for {}".format(self.instance_name))
+        return query
 
     def build(self, kwargs):
         return self.model(**kwargs)

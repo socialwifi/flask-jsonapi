@@ -25,8 +25,8 @@ class NestedRepository:
     def get_detail(self, id):
         return self.repository.get_detail(id)
 
-    def get_list(self, filters=None, pagination=None):
-        return self.repository.get_list(filters, pagination)
+    def get_list(self, filters=None, sorting=None, pagination=None):
+        return self.repository.get_list(filters, sorting, pagination)
 
     def delete(self, id):
         return self.repository.delete(id)
