@@ -79,6 +79,14 @@ class TestFiltersSchemaBasic:
             with pytest.raises(flask_jsonapi.exceptions.InvalidFilters):
                 ExampleFiltersSchema().parse()
 
+    def test_empty_filter_value(self, app):
+        class ExampleFiltersSchema(filters_schema.FilterSchema):
+            valid = filters_schema.FilterField()
+
+        with app.test_request_context('?filter[valid]='):
+            with pytest.raises(flask_jsonapi.exceptions.InvalidFilters):
+                ExampleFiltersSchema().parse()
+
     def test_parse_value(self, app):
         class ExampleFiltersSchema(filters_schema.FilterSchema):
             identifier = filters_schema.FilterField(type_=fields.UUID)
