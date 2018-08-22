@@ -25,6 +25,7 @@ class ResourceBase(views.View):
     def __init__(self, *, schema=None):
         if schema:
             self.schema = schema
+        self.sort_parser = query_string.SortParser(schema=self.schema)
         self.include_parser = query_string.IncludeParser(schema=self.schema)
         self.sparse_fields_parser = query_string.SparseFieldsParser(schema=self.schema)
 
@@ -119,8 +120,10 @@ class ResourceList(ResourceBase):
 
     def get(self, *args, **kwargs):
         parsed_filters = self.filter_schema.parse()
+        parsed_sorting = self.sort_parser.parse()
         parsed_pagination = self.pagination.parse()
         objects_list = self.read_many(filters=parsed_filters,
+                                      sorting=parsed_sorting,
                                       pagination=parsed_pagination)
         include_fields = self.include_parser.parse()
         sparse_fields = self.sparse_fields_parser.parse()
@@ -175,7 +178,7 @@ class ResourceList(ResourceBase):
             status=http.HTTPStatus.CREATED,
         )
 
-    def read_many(self, filters, pagination):
+    def read_many(self, filters, sorting, pagination):
         raise NotImplementedError
 
     def get_count(self, filters):

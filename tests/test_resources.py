@@ -9,6 +9,8 @@ from marshmallow_jsonapi import fields
 from flask_jsonapi import api
 from flask_jsonapi import filters_schema
 from flask_jsonapi import resources
+from flask_jsonapi import resource_repository_views
+from flask_jsonapi.resource_repositories import repositories
 
 JSONAPI_HEADERS = {'content-type': 'application/vnd.api+json', 'accept': 'application/vnd.api+json'}
 
@@ -38,7 +40,7 @@ def test_integration_get_list(app, example_schema, example_model):
     class ExampleListView(resources.ResourceList):
         schema = example_schema
 
-        def read_many(self, filters, pagination):
+        def read_many(self, filters, sorting, pagination):
             return [
                 example_model(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a4', body='heheh'),
                 example_model(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a5', body='hihi'),
@@ -77,11 +79,29 @@ def test_integration_get_list(app, example_schema, example_model):
     }
 
 
+def test_sorting(app, example_schema):
+    class ExampleRepository(repositories.ResourceRepository):
+        pass
+
+    class ExampleListView(resource_repository_views.ResourceRepositoryViewSet):
+        schema = example_schema
+        repository = ExampleRepository
+
+    api.Api(app).repository(ExampleListView(), 'example', '/examples/')
+    get_list_mock = mock.MagicMock()
+    with mock.patch('flask_jsonapi.resource_repositories.repositories.ResourceRepository.get_list', get_list_mock):
+        app.test_client().get(
+            '/examples/?sort=body',
+            headers=JSONAPI_HEADERS
+        )
+    get_list_mock.assert_called_once_with({}, ('body',), {})
+
+
 def test_integration_get_list_with_pagination(app, example_schema, example_model):
     class ExampleListView(resources.ResourceList):
         schema = example_schema
 
-        def read_many(self, filters, pagination):
+        def read_many(self, filters, sorting, pagination):
             return [
                 example_model(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a4', body='heheh'),
                 example_model(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a5', body='hihi'),
@@ -187,7 +207,7 @@ def test_integration_get_filtered_list(app, example_schema, example_model):
 
         applied_filters = {}
 
-        def read_many(self, filters, pagination):
+        def read_many(self, filters, sorting, pagination):
             self.applied_filters.update(filters)
             return []
 
@@ -212,7 +232,7 @@ def test_integration_pagination(app, example_schema):
 
         applied_pagination = {}
 
-        def read_many(self, filters, pagination):
+        def read_many(self, filters, sorting, pagination):
             self.applied_pagination.update(pagination)
             return []
 
