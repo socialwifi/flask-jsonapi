@@ -31,9 +31,9 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
     def get_list(self, filters=None, pagination=None):
         try:
             query = self.get_query()
-            filtered_query = self.apply_filters(query, filters)
-            paginated_query = self.apply_pagination(filtered_query, pagination)
-            return paginated_query.all()
+            query = self.apply_filters(query, filters)
+            query = self.apply_pagination(query, pagination)
+            return query.all()
         except exc.SQLAlchemyError as error:
             logger.exception(error)
             raise ForbiddenError(detail='Error while getting {} list.'.format(self.instance_name))
