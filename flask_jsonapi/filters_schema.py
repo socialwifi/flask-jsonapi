@@ -133,7 +133,7 @@ class FilterSchemaBase:
         if len(fields) != 0 and schema is None:
             raise ValueError('`fields` and `schema` attributes must be provided.')
         for field_name in fields:
-            attribute = utils.get_model_field(schema, field_name)
+            attribute = cls.get_model_attribute(schema, field_name)
             field_cls = utils.get_field_class(schema, field_name)
             filters[field_name] = FilterField(attribute=attribute, type_=field_cls)
         filters.update(cls.declared_filters)
@@ -151,6 +151,14 @@ class FilterSchemaBase:
         if not isinstance(cls._meta.fields, (list, tuple)):
             raise ValueError('`fields` option must be a list or tuple.')
         return cls._meta.fields
+
+    @staticmethod
+    def get_model_attribute(schema, field):
+        if utils.is_field_mapped(schema, field):
+            return schema._declared_fields[field].attribute
+        if utils.is_relationship(schema, field) and schema._declared_fields[field].id_field is not None:
+            return '{}__{}'.format(field, schema._declared_fields[field].id_field)
+        return field
 
     def parse(self) -> dict:
         result = {}
