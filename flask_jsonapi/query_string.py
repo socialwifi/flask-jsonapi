@@ -1,11 +1,13 @@
 import itertools
 import math
 import re
+import typing
 
 import flask
 from six.moves.urllib import parse
 
 from flask_jsonapi import exceptions
+from flask_jsonapi import utils
 
 
 class QueryStringParser:
@@ -114,3 +116,29 @@ class SparseFieldsParser:
 
     def format_resource_paths(self, resource, fields):
         return ['{}.{}'.format(resource, value) for value in fields]
+
+
+class SortParser(QueryStringParser):
+    def __init__(self, schema):
+        self.schema = schema
+
+    def parse(self) -> typing.List[str]:
+        try:
+            sort_fields = flask.request.args.get('sort').split(',')
+            sorting_results = []
+            for sort_field in sort_fields:
+                result = self.get_sorting(sort_field)
+                sorting_results.append(result)
+            return sorting_results
+        except AttributeError:
+            return []
+
+    def get_sorting(self, sort_field) -> str:
+        field_name = sort_field.replace('-', '')
+        if not utils.field_exist(self.schema, field_name):
+            raise exceptions.InvalidSort("{} has no attribute {}".format(self.schema.__name__, field_name))
+        if utils.is_relationship(self.schema, field_name):
+            raise exceptions.InvalidSort("You can't sort on {} because it is a relationship field".format(field_name))
+        field = utils.get_model_field(self.schema, field_name)
+        field = '-{}'.format(field) if sort_field.startswith('-') else field
+        return field
