@@ -1,10 +1,10 @@
 import http
 from contextlib import contextmanager
 
-from flask_jsonapi import ResourceList, response
+from flask_jsonapi import resources
 
 
-class NestedResourceList(ResourceList):
+class NestedResourceList(resources.ResourceList):
     def __init__(self, *, nested_schema, **kwargs):
         super().__init__(**kwargs)
         self.nested_schema = nested_schema
@@ -25,7 +25,7 @@ class NestedResourceList(ResourceList):
         id_map = {}
         kwargs = {'id_map': id_map}
         object = self.create(data=data, **kwargs)
-        return response.JsonApiResponse(
+        return resources.response.JsonApiResponse(
             self.schema().dump(object, **kwargs).data,
             status=http.HTTPStatus.CREATED,
         )
