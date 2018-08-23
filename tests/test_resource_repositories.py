@@ -34,7 +34,7 @@ class Repository:
     def create(self, data, **kwargs):
         return ExampleModel(**data)
 
-    def get_list(self, filters=None, pagination=None):
+    def get_list(self, filters=None, sorting=None, pagination=None):
         return [
             ExampleModel(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a4', body='heheh'),
             ExampleModel(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a5', body='hihi'),

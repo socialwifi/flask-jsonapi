@@ -9,14 +9,26 @@ class EqualityMixin:
             return NotImplemented
 
 
-def get_model_field(schema, field):
-    if schema._declared_fields.get(field) is None:
+def field_exist(schema, field):
+    return schema._declared_fields.get(field) is not None
+
+
+def is_field_mapped(schema, field):
+    if not field_exist(schema, field):
         raise ValueError('{} has no attribute {}'.format(schema.__name__, field))
-    if schema._declared_fields[field].attribute is not None:
+    return schema._declared_fields[field].attribute is not None
+
+
+def is_relationship(schema, field: str):
+    if not field_exist(schema, field):
+        raise ValueError('{} has no attribute {}'.format(schema.__name__, field))
+    field = schema._declared_fields[field]
+    return isinstance(field, fields.Relationship)
+
+
+def get_model_field(schema, field):
+    if is_field_mapped(schema, field):
         return schema._declared_fields[field].attribute
-    if (isinstance(schema._declared_fields[field], fields.Relationship)
-            and schema._declared_fields[field].id_field is not None):
-        return '{}__{}'.format(field, schema._declared_fields[field].id_field)
     return field
 
 
