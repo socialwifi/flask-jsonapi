@@ -1,7 +1,8 @@
 0.8.4 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Add sorting.
+- Fix bug empty filter value.
 
 
 0.8.3 (2018-08-17)
