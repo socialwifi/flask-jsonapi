@@ -8,7 +8,7 @@ from setuptools import find_packages
 
 setup(
     name='flask-jsonapi',
-    version='0.8.4.dev0',
+    version='0.9.1',
     description='JSONAPI 1.0 implementation for Flask.',
     author='Social WiFi',
     author_email='it@socialwifi.com',
