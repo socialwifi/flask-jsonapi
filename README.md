@@ -130,7 +130,7 @@ Result:
 ## Running tests
 
 ```bash
-virtualenv -p python3.6 ~/flask-jsonapi-virtualenv
+virtualenv -p python3.7 ~/flask-jsonapi-virtualenv
 . ~/flask-jsonapi-virtualenv/bin/activate
 pip install -r base_requirements.txt
 pip install -U pytest==3.0.5
