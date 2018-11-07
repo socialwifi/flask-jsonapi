@@ -167,7 +167,7 @@ class ResourceList(ResourceBase):
             return response.JsonApiErrorResponse.from_marshmallow_errors(e.messages)
         else:
             if errors:
-                response.JsonApiErrorResponse.from_marshmallow_errors(errors)
+                return response.JsonApiErrorResponse.from_marshmallow_errors(errors)
             else:
                 return self.prepare_response(data)
 
