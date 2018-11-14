@@ -46,8 +46,6 @@ class DjangoQueryMixin(object):
         'lte':          operators.le,
         'contains':     operators.contains_op,
         'notcontains':  operators.notcontains_op,
-        'in':           operators.in_op,
-        'notin':        operators.notin_op,
         'exact':        operators.eq,
         'iexact':       operators.ilike_op,
         'startswith':   operators.startswith_op,
@@ -59,6 +57,11 @@ class DjangoQueryMixin(object):
         'year':         lambda c, x: extract('year', c) == x,
         'month':        lambda c, x: extract('month', c) == x,
         'day':          lambda c, x: extract('day', c) == x
+    }
+
+    _underscore_list_operators = {
+        'in': operators.in_op,
+        'notin': operators.notin_op,
     }
 
     def filter_by(self, **kwargs):
@@ -129,6 +132,10 @@ class DjangoQueryMixin(object):
                 elif token in self._underscore_operators:
                     op = self._underscore_operators[token]
                     q = q.filter(negate_if(op(column, *to_list(value))))
+                    column = None
+                elif token in self._underscore_list_operators:
+                    op = self._underscore_list_operators[token]
+                    q = q.filter(negate_if(op(column, to_list(value))))
                     column = None
                 else:
                     raise ValueError('No idea what to do with %r' % token)
