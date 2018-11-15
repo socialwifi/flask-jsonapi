@@ -87,3 +87,10 @@ class TestFilterMethods:
         users = user_repository.get_list({'experience_level__gte': 9000})
         assert len(users) == 1
         assert users[0].name == 'Darth Vader'
+
+    def test_in(self, user_repository):
+        user_repository.create({'name': 'Mr. Bean', 'experience_level': 3})
+        user_repository.create({'name': 'Darth Vader', 'experience_level': 9000})
+        user_repository.create({'name': 'Marcin Kopec', 'experience_level': 420})
+        users = user_repository.get_list({'name__in': ['Mr. Bean', 'Marcin Kopec']})
+        assert len(users) == 2
