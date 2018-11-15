@@ -1,4 +1,4 @@
-0.9.2 (unreleased)
+0.9.2 (2018-11-15)
 ------------------
 
 - Fix in operator bug.
