@@ -198,5 +198,6 @@ Table of Contents
    including_relationships
    sparse_fieldsets
    filtering
+   sorting
    pagination
    extensions
