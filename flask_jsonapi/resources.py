@@ -31,8 +31,9 @@ class ResourceBase(views.View):
 
     @classmethod
     def as_view(cls, name, *class_args, **class_kwargs):
-        view = super().as_view(name, *class_args, **class_kwargs)
-        return decorators.check_headers(view)
+        cls.decorators = list(cls.decorators)
+        cls.decorators.append(decorators.check_headers)
+        return super().as_view(name, *class_args, **class_kwargs)
 
     def dispatch_request(self, *args, **kwargs):
         self.args = args

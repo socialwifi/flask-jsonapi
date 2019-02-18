@@ -42,11 +42,10 @@ class ResourceRepositoryViewSet:
     filter_schema = filters_schema.FilterSchema()
     detail_view_cls = ResourceRepositoryDetailView
     list_view_cls = ResourceRepositoryListView
-    view_decorators = ()
     view_kwargs = None
 
     def __init__(self, *, repository=None, schema=None, filter_schema=None, detail_view_cls=None, list_view_cls=None,
-                 view_decorators=None, view_kwargs=None):
+                 decorators=None, view_kwargs=None):
         if repository:
             self.repository = repository
         if schema:
@@ -57,25 +56,16 @@ class ResourceRepositoryViewSet:
             self.detail_view_cls = detail_view_cls
         if list_view_cls:
             self.list_view_cls = list_view_cls
-        if view_decorators:
-            self.view_decorators = view_decorators
+        if decorators:
+            self.decorators = decorators
         if view_kwargs:
             self.view_kwargs = view_kwargs
 
     def as_detail_view(self, view_name):
-        return self.decorate(
-            self.detail_view_cls.as_view(view_name, **self.get_views_kwargs())
-        )
+        return self.detail_view_cls.as_view(view_name, **self.get_views_kwargs())
 
     def as_list_view(self, view_name):
-        return self.decorate(
-            self.list_view_cls.as_view(view_name, filter_schema=self.filter_schema, **self.get_views_kwargs())
-        )
-
-    def decorate(self, view):
-        for decorator in self.view_decorators:
-            view = decorator(view)
-        return view
+        return self.list_view_cls.as_view(view_name, filter_schema=self.filter_schema, **self.get_views_kwargs())
 
     def get_views_kwargs(self):
         return {

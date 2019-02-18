@@ -189,7 +189,7 @@ def example_decorator(func):
 
 class ExampleDecoratedResourceRepositoryViewSet(resource_repository_views.ResourceRepositoryViewSet):
     schema = ExampleSchema
-    view_decorators = (
+    decorators = (
         decorators.selective_decorator(example_decorator, ['POST']),
     )
 
