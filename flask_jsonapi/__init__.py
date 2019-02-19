@@ -10,6 +10,11 @@ from .resource_repository_views import ResourceRepositoryListView
 from .resource_repository_views import ResourceRepositoryViewSet
 from .resources import ResourceDetail
 from .resources import ResourceList
+from .protected_resource_repository_views import PermissionManagerBase
+from .protected_resource_repository_views import ProtectedResourceRepositoryDetailView
+from .protected_resource_repository_views import ProtectedResourceRepositoryListView
+from .protected_resource_repository_views import ProtectedResourceRepositoryViewSet
+from .resource_repositories.repositories import ProtectedResourceRepository
 
 __all__ = [
     exceptions,
@@ -24,4 +29,9 @@ __all__ = [
     ResourceRepositoryViewSet,
     ResourceDetail,
     ResourceList,
+    ProtectedResourceRepository,
+    PermissionManagerBase,
+    ProtectedResourceRepositoryDetailView,
+    ProtectedResourceRepositoryListView,
+    ProtectedResourceRepositoryViewSet,
 ]

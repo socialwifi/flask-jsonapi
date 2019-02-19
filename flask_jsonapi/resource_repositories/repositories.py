@@ -1,3 +1,5 @@
+import collections
+
 from contextlib import contextmanager
 
 from flask_jsonapi import exceptions
@@ -25,3 +27,17 @@ class ResourceRepository:
     @contextmanager
     def begin_transaction(self):
         yield
+
+
+Parent = collections.namedtuple('Parent', ('name', 'id'))
+
+
+class ProtectedResourceRepository(ResourceRepository):
+    def get_parent_by_id(self, id):
+        raise exceptions.NotImplementedMethod('Getting parent is not implemented.')
+
+    def get_parent_by_filters(self, filters):
+        raise exceptions.NotImplementedMethod('Getting parent is not implemented.')
+
+    def get_parent_by_data(self, data):
+        raise exceptions.NotImplementedMethod('Getting parent is not implemented.')

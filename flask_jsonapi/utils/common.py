@@ -1,4 +1,9 @@
+import flask
+import sqlalchemy.orm
+
 from marshmallow_jsonapi import fields
+
+from flask_jsonapi import exceptions
 
 
 class EqualityMixin:
@@ -38,3 +43,24 @@ def get_field_class(schema, field, default=fields.Str):
     if schema._declared_fields.get(field) is None:
         return default
     return type(schema._declared_fields[field])
+
+
+def get_account_id():
+    try:
+        return flask.request.oauth['account_id']
+    except (AttributeError, KeyError):
+        raise exceptions.BadRequest(source={}, detail='Unauthenticated user.')
+
+
+def get_account_role_name(role_model, parent, account_id):
+    """
+    Use partial(get_account_role, [role_model]) to pass this function to Permission Manager
+    """
+    try:
+        return role_model.query.filter_by(
+            generic_foreign_key_table=parent.name,
+            generic_foreign_key_id=parent.id,
+            account_id=account_id,
+        ).one().name
+    except sqlalchemy.orm.exc.NoResultFound:
+        return None
