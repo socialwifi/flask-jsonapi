@@ -43,12 +43,12 @@ class TestSizeNumberPagination:
 
     def test_pagination_invalid_provided(self, app):
         with app.test_request_context('/examples/?page[size]=100'):
-            with pytest.raises(exceptions.InvalidPage, detail='One of page parameters wrongly or not specified.'):
+            with pytest.raises(exceptions.InvalidPage, message='One of page parameters wrongly or not specified.'):
                 query_string.SizeNumberPagination().parse()
 
     def test_pagination_not_int(self, app):
         with app.test_request_context('/examples/?page[size]=100&page[number]=x'):
-            with pytest.raises(exceptions.InvalidPage, detail='Page parameters must be integers.'):
+            with pytest.raises(exceptions.InvalidPage, message='Page parameters must be integers.'):
                 query_string.SizeNumberPagination().parse()
 
     def test_links_first_page(self, app):
