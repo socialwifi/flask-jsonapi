@@ -1,7 +1,7 @@
 0.9.3 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Drop python 3.5 and 3.6 support. From now only 3.7 is supported.
 
 
 0.9.2 (2018-11-15)

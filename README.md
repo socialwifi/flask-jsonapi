@@ -11,7 +11,7 @@ JSONAPI 1.0 server implementation for Flask.
 
 ## Installation
 
-This package requires at least python 3.5. To install run: `pip install flask-jsonapi`. You can install SQLAlchemy support
+This package requires at least python 3.7. To install run: `pip install flask-jsonapi`. You can install SQLAlchemy support
 with: `pip install flask-jsonapi[sqlalchemy]`.
 
 ## Documentation
@@ -130,7 +130,7 @@ Result:
 ## Running tests
 
 ```bash
-virtualenv -p python3.6 ~/flask-jsonapi-virtualenv
+virtualenv -p python3.7 ~/flask-jsonapi-virtualenv
 . ~/flask-jsonapi-virtualenv/bin/activate
 pip install -r base_requirements.txt
 pip install -U pytest==3.0.5
