@@ -2,9 +2,11 @@ import uuid
 
 import marshmallow_jsonapi
 import pytest
+
 from marshmallow_jsonapi import fields
 
 import flask_jsonapi
+
 from flask_jsonapi import filters_schema
 
 

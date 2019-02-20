@@ -1,15 +1,17 @@
 import collections
 import json
+
 from unittest import mock
 
 import marshmallow_jsonapi
 import pytest
+
 from marshmallow_jsonapi import fields
 
 from flask_jsonapi import api
 from flask_jsonapi import filters_schema
-from flask_jsonapi import resources
 from flask_jsonapi import resource_repository_views
+from flask_jsonapi import resources
 from flask_jsonapi.resource_repositories import repositories
 
 JSONAPI_HEADERS = {'content-type': 'application/vnd.api+json', 'accept': 'application/vnd.api+json'}

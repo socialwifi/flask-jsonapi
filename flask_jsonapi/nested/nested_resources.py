@@ -1,4 +1,5 @@
 import http
+
 from contextlib import contextmanager
 
 from flask_jsonapi import resources

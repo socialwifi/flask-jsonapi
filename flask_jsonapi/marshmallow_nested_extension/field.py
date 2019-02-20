@@ -1,5 +1,5 @@
-from marshmallow_jsonapi import fields
 from marshmallow import ValidationError
+from marshmallow_jsonapi import fields
 
 
 class CompleteNestedRelationship(fields.Relationship):
