@@ -4,10 +4,11 @@ python:
   - 3.6
 install:
   - pip install -r base_requirements.txt
-  - pip install -U pytest==4.3.0 pytest-cov coveralls flake8
+  - pip install -U pytest==4.3.0 pytest-cov coveralls flake8 isort
   - pip install sqlalchemy
 script:
   - flake8 .
+  - isort -c
   - python -m pytest --cov .
 after_success:
   - coveralls

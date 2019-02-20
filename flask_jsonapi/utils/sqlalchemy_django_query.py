@@ -19,10 +19,12 @@
     :copyright: 2011 by Armin Ronacher, Mike Bayer.
     license: BSD, see LICENSE for more details.
 """
-from sqlalchemy.orm import joinedload, joinedload_all
+from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload_all
 from sqlalchemy.orm.base import _entity_descriptor
 from sqlalchemy.orm.query import Query
-from sqlalchemy.sql import operators, extract
+from sqlalchemy.sql import extract
+from sqlalchemy.sql import operators
 from sqlalchemy.util import to_list
 
 

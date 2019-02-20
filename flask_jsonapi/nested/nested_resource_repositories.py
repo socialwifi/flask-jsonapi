@@ -1,4 +1,5 @@
 import flask_jsonapi.nested.nested_resources
+
 from flask_jsonapi import descriptors
 from flask_jsonapi import resource_repository_views
 from flask_jsonapi.nested import nested_repository

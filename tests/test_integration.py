@@ -4,11 +4,11 @@ from marshmallow_jsonapi import Schema
 from marshmallow_jsonapi import fields
 
 from flask_jsonapi import api
-from flask_jsonapi.resource_repositories import repositories
 from flask_jsonapi.marshmallow_nested_extension.field import CompleteNestedRelationship
 from flask_jsonapi.marshmallow_nested_extension.schema import IdMappingSchema
 from flask_jsonapi.nested import nested_resource_repositories
 from flask_jsonapi.nested.nested_repository import ChildRepository
+from flask_jsonapi.resource_repositories import repositories
 
 JSONAPI_HEADERS = {'content-type': 'application/vnd.api+json', 'accept': 'application/vnd.api+json'}
 

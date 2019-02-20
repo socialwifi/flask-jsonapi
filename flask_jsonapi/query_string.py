@@ -4,6 +4,7 @@ import re
 import typing
 
 import flask
+
 from six.moves.urllib import parse
 
 from flask_jsonapi import exceptions

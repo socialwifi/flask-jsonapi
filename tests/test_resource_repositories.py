@@ -3,6 +3,7 @@ import functools
 import json
 
 import marshmallow_jsonapi
+
 from marshmallow_jsonapi import fields
 
 from flask_jsonapi import api

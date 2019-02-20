@@ -1,6 +1,7 @@
 import re
 
 import flask
+
 from marshmallow import exceptions as ma_exceptions
 from marshmallow_jsonapi import fields as ma_fields
 from marshmallow_jsonapi import schema as ma_schema

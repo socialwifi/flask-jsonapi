@@ -1,6 +1,7 @@
 import flask
 import pytest
 import sqlalchemy
+
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
 

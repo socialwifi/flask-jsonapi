@@ -1,9 +1,9 @@
 import pytest
 import sqlalchemy
+
 from sqlalchemy.ext.declarative import declarative_base
 
 from flask_jsonapi.resource_repositories import sqlalchemy_repositories
-
 
 Base = declarative_base()
 

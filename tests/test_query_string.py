@@ -1,4 +1,5 @@
 import pytest
+
 from marshmallow_jsonapi import Schema
 from marshmallow_jsonapi import fields
 
