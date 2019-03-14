@@ -1,17 +1,9 @@
 import abc
 import http
-import logging
 import typing
 
 from flask_jsonapi import exceptions
-
-READ_ACTION = 'read'
-DESTROY_ACTION = 'destroy'
-UPDATE_ACTION = 'update'
-LIST_ACTION = 'list'
-CREATE_ACTION = 'create'
-
-logger = logging.getLogger(__name__)
+from flask_jsonapi.permissions import actions
 
 
 class PermissionException(exceptions.JsonApiException):
@@ -83,21 +75,21 @@ class ObjectLevelPermissionChecker(PermissionChecker):
         pass
 
     def check_create_permission(self, *, data: dict) -> dict:
-        return self._check_data_permission(data=data, action=CREATE_ACTION)
+        return self._check_data_permission(data=data, action=actions.CREATE_ACTION)
 
     def check_read_permission(self, *, resource: Resource) -> Resource:
-        return self._check_resource_permission(resource=resource, action=READ_ACTION)
+        return self._check_resource_permission(resource=resource, action=actions.READ_ACTION)
 
     def check_update_permission(self, *, resource: Resource, data: dict) -> typing.Tuple[Resource, dict]:
-        self._check_resource_permission(resource=resource, action=UPDATE_ACTION)
+        self._check_resource_permission(resource=resource, action=actions.UPDATE_ACTION)
         try:
-            self._check_data_permission(data=data, action=UPDATE_ACTION)
+            self._check_data_permission(data=data, action=actions.UPDATE_ACTION)
         except self.ObjectIdNotFoundInData:
             pass
         return resource, data
 
     def check_destroy_permission(self, *, resource) -> Resource:
-        return self._check_resource_permission(resource=resource, action=DESTROY_ACTION)
+        return self._check_resource_permission(resource=resource, action=actions.DESTROY_ACTION)
 
     def _check_resource_permission(self, *, resource: Resource, action: str) -> Resource:
         object_id = self.get_object_id_from_resource(resource)

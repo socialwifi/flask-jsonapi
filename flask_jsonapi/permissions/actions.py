@@ -1,0 +1,5 @@
+READ_ACTION = 'read'
+DESTROY_ACTION = 'destroy'
+UPDATE_ACTION = 'update'
+LIST_ACTION = 'list'
+CREATE_ACTION = 'create'
