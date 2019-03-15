@@ -6,6 +6,9 @@ from .actions import UPDATE_ACTION
 from .checkers import ObjectLevelPermissionChecker
 from .checkers import PermissionChecker
 from .checkers import PermissionException
+from .views import ProtectedDetailView
+from .views import ProtectedListView
+from .views import ProtectedViewSet
 
 __all__ = [
     CREATE_ACTION,
@@ -16,4 +19,7 @@ __all__ = [
     PermissionChecker,
     ObjectLevelPermissionChecker,
     PermissionException,
+    ProtectedDetailView,
+    ProtectedListView,
+    ProtectedViewSet,
 ]
