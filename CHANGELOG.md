@@ -1,6 +1,7 @@
 0.9.3 (unreleased)
 ------------------
 
+- Add interfaces for permission checking.
 - Drop python 3.5 and 3.6 support. From now only 3.7 is supported.
 
 
