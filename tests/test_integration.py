@@ -4,6 +4,8 @@ from marshmallow_jsonapi import Schema
 from marshmallow_jsonapi import fields
 
 from flask_jsonapi import api
+from flask_jsonapi import resource_repository_views
+from flask_jsonapi.resource_repositories import sqlalchemy_repositories
 from flask_jsonapi.marshmallow_nested_extension.field import CompleteNestedRelationship
 from flask_jsonapi.marshmallow_nested_extension.schema import IdMappingSchema
 from flask_jsonapi.nested import nested_resource_repositories
@@ -57,7 +59,23 @@ class ParentModel:
         self.id = kwargs['id']
 
 
+class BadSchema(Schema):
+    other_id = fields.Str(required=True)
+
+    class Meta:
+        type_ = 'bad'
+        self_view_many = 'bad_list'
+        self_view = 'bad_detail'
+        self_view_kwargs = {'bad_id': '<id>'}
+        strict = True
+
+
 database_simulation = {}
+
+
+class BadRepository(repositories.ResourceRepository):
+    def get_list(self, filters=None, sorting=None, pagination=None):
+        pass
 
 
 class DescendantRepository(repositories.ResourceRepository):
@@ -94,6 +112,11 @@ class ParentResourceRepositoryViewSet(nested_resource_repositories.NestedResourc
 
     def __init__(self):
         super().__init__(repository=ParentRepository())
+
+
+class BadResourceRepositoryViewSet(resource_repository_views.ResourceRepositoryViewSet):
+    schema = BadSchema
+    repository = BadRepository()
 
 
 def test_integration_create_nested_resource(app):
@@ -191,3 +214,16 @@ def test_integration_get_nested_resource(app):
         "jsonapi": {"version": "1.0"},
     }
     assert expected == result
+
+
+def test_bad_get_list(app):
+    database_simulation.clear()
+    application_api = api.Api(app)
+    application_api.repository(BadResourceRepositoryViewSet(), 'bad', '/bad/')
+    response = app.test_client().get(
+        '/bad/',
+        headers=JSONAPI_HEADERS,
+    )
+    result = json.loads(response.data.decode('utf-8'))
+    assert result['errors'][0]['status'] == 500
+    assert result['errors'][0]['detail'] == 'Must have an `id` field'

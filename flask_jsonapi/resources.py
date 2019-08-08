@@ -138,7 +138,7 @@ class ResourceList(ResourceBase):
                 'Error Processing Request',
                 extra={'status_code': http.HTTPStatus.BAD_REQUEST, 'request': request, 'exception': e}
             )
-            return helpers.make_response('Error Processing Request', http.HTTPStatus.BAD_REQUEST)
+            raise exceptions.JsonApiException(detail=str(e), source={'component': 'schema'})
         else:
             if errors:
                 return response.JsonApiErrorResponse.from_marshmallow_errors(errors)
