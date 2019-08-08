@@ -77,6 +77,9 @@ class BadRepository(repositories.ResourceRepository):
     def get_list(self, filters=None, sorting=None, pagination=None):
         pass
 
+    def get_detail(self, id):
+        pass
+
 
 class DescendantRepository(repositories.ResourceRepository):
     def create(self, data, **kwargs):
@@ -222,6 +225,19 @@ def test_bad_get_list(app):
     application_api.repository(BadResourceRepositoryViewSet(), 'bad', '/bad/')
     response = app.test_client().get(
         '/bad/',
+        headers=JSONAPI_HEADERS,
+    )
+    result = json.loads(response.data.decode('utf-8'))
+    assert result['errors'][0]['status'] == 500
+    assert result['errors'][0]['detail'] == 'Must have an `id` field'
+
+
+def test_bad_get_detail(app):
+    database_simulation.clear()
+    application_api = api.Api(app)
+    application_api.repository(BadResourceRepositoryViewSet(), 'bad', '/bad/')
+    response = app.test_client().get(
+        '/bad/1/',
         headers=JSONAPI_HEADERS,
     )
     result = json.loads(response.data.decode('utf-8'))
