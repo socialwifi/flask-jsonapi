@@ -1,4 +1,4 @@
-0.10.1 (unreleased)
+0.10.1 (2019-08-27)
 -------------------
 
 - Freeze marshmallow version below 3.0.0.
