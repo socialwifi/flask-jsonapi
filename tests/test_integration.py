@@ -4,6 +4,7 @@ from marshmallow_jsonapi import Schema
 from marshmallow_jsonapi import fields
 
 from flask_jsonapi import api
+from flask_jsonapi import resource_repository_views
 from flask_jsonapi.marshmallow_nested_extension.field import CompleteNestedRelationship
 from flask_jsonapi.marshmallow_nested_extension.schema import IdMappingSchema
 from flask_jsonapi.nested import nested_resource_repositories
@@ -57,7 +58,44 @@ class ParentModel:
         self.id = kwargs['id']
 
 
+class BadDataModel:
+    def __init__(self, **kwargs):
+        self.id = kwargs['id']
+        self.number = kwargs['number']
+
+
+class BadSchema(Schema):
+    other_id = fields.Str(required=True)
+
+    class Meta:
+        type_ = 'bad'
+        self_view_many = 'bad_list'
+        self_view = 'bad_detail'
+        self_view_kwargs = {'bad_id': '<id>'}
+        strict = True
+
+
+class BadDataSchema(Schema):
+    id = fields.Str(required=True)
+    number = fields.DateTime(required=True)
+
+    class Meta:
+        type_ = 'bad'
+        self_view_many = 'bad_list'
+        self_view = 'bad_detail'
+        self_view_kwargs = {'bad_id': '<id>'}
+        strict = True
+
+
 database_simulation = {}
+
+
+class BadRepository(repositories.ResourceRepository):
+    def get_list(self, filters=None, sorting=None, pagination=None):
+        pass
+
+    def get_detail(self, id):
+        pass
 
 
 class DescendantRepository(repositories.ResourceRepository):
@@ -88,12 +126,30 @@ class ParentRepository(repositories.ResourceRepository):
         return database_simulation.values()
 
 
+class BadDataRepository(repositories.ResourceRepository):
+    def get_list(self, filters=None, sorting=None, pagination=None):
+        return database_simulation.values()
+
+    def get_detail(self, id):
+        return database_simulation[int(id)]
+
+
 class ParentResourceRepositoryViewSet(nested_resource_repositories.NestedResourceRepositoryViewSet):
     schema = ParentSchema
     nested_schema = ParentSchemaAtomic
 
     def __init__(self):
         super().__init__(repository=ParentRepository())
+
+
+class BadResourceRepositoryViewSet(resource_repository_views.ResourceRepositoryViewSet):
+    schema = BadSchema
+    repository = BadRepository()
+
+
+class BadDataResourceRepositoryViewSet(resource_repository_views.ResourceRepositoryViewSet):
+    schema = BadDataSchema
+    repository = BadDataRepository()
 
 
 def test_integration_create_nested_resource(app):
@@ -191,3 +247,61 @@ def test_integration_get_nested_resource(app):
         "jsonapi": {"version": "1.0"},
     }
     assert expected == result
+
+
+def test_bad_get_list(app):
+    database_simulation.clear()
+    application_api = api.Api(app)
+    application_api.repository(BadResourceRepositoryViewSet(), 'bad', '/bad/')
+    response = app.test_client().get(
+        '/bad/',
+        headers=JSONAPI_HEADERS,
+    )
+    result = json.loads(response.data.decode('utf-8'))
+    assert result['errors'][0]['status'] == 500
+    assert result['errors'][0]['detail'] == 'Must have an `id` field'
+
+
+def test_bad_get_detail(app):
+    database_simulation.clear()
+    application_api = api.Api(app)
+    application_api.repository(BadResourceRepositoryViewSet(), 'bad', '/bad/')
+    response = app.test_client().get(
+        '/bad/1/',
+        headers=JSONAPI_HEADERS,
+    )
+    result = json.loads(response.data.decode('utf-8'))
+    assert result['errors'][0]['status'] == 500
+    assert result['errors'][0]['detail'] == 'Must have an `id` field'
+
+
+def test_bad_data_get_list(app):
+    database_simulation.clear()
+    application_api = api.Api(app)
+    application_api.repository(BadDataResourceRepositoryViewSet(), 'bad', '/bad/')
+    model = BadDataModel(**{'id': 111, 'number': 1})
+    database_simulation[model.id] = model
+    response = app.test_client().get(
+        '/bad/',
+        headers=JSONAPI_HEADERS,
+    )
+    result = json.loads(response.data.decode('utf-8'))
+    assert result['errors'][0]['status'] == 500
+    assert result['errors'][0]['detail'] == 'marshmallow.ValidationError'
+    assert result['errors'][0]['source'] == {'0': {'number': ['"1" cannot be formatted as a datetime.']}}
+
+
+def test_bad_data_get_detail(app):
+    database_simulation.clear()
+    application_api = api.Api(app)
+    application_api.repository(BadDataResourceRepositoryViewSet(), 'bad', '/bad/')
+    model = BadDataModel(**{'id': 111, 'number': 1})
+    database_simulation[model.id] = model
+    response = app.test_client().get(
+        '/bad/111/',
+        headers=JSONAPI_HEADERS,
+    )
+    result = json.loads(response.data.decode('utf-8'))
+    assert result['errors'][0]['status'] == 500
+    assert result['errors'][0]['detail'] == 'marshmallow.ValidationError'
+    assert result['errors'][0]['source'] == {'number': ['"1" cannot be formatted as a datetime.']}

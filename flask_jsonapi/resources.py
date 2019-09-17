@@ -68,7 +68,13 @@ class ResourceDetail(ResourceBase):
         try:
             data, errors = self.schema(include_data=include_fields, only=sparse_fields).dump(resource)
         except marshmallow.ValidationError as e:
-            return response.JsonApiErrorResponse.from_marshmallow_errors(e.messages)
+            raise exceptions.JsonApiException(detail='marshmallow.ValidationError', source=e.messages)
+        except (AttributeError, KeyError, ValueError) as e:
+            logger.error(
+                'Error Processing Request',
+                extra={'status_code': http.HTTPStatus.BAD_REQUEST, 'request': request, 'exception': e}
+            )
+            raise exceptions.JsonApiException(detail=str(e), source={'component': 'schema'})
         else:
             if errors:
                 return response.JsonApiErrorResponse.from_marshmallow_errors(errors)
@@ -132,13 +138,13 @@ class ResourceList(ResourceBase):
             objects, errors = self.schema(
                 many=True, include_data=include_fields, only=sparse_fields).dump(objects_list)
         except marshmallow.ValidationError as e:
-            return response.JsonApiErrorResponse.from_marshmallow_errors(e.messages)
+            raise exceptions.JsonApiException(detail='marshmallow.ValidationError', source=e.messages)
         except (AttributeError, KeyError, ValueError) as e:
             logger.error(
                 'Error Processing Request',
                 extra={'status_code': http.HTTPStatus.BAD_REQUEST, 'request': request, 'exception': e}
             )
-            return helpers.make_response('Error Processing Request', http.HTTPStatus.BAD_REQUEST)
+            raise exceptions.JsonApiException(detail=str(e), source={'component': 'schema'})
         else:
             if errors:
                 return response.JsonApiErrorResponse.from_marshmallow_errors(errors)

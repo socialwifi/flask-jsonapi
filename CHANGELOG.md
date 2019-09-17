@@ -1,7 +1,7 @@
 0.10.2 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Fixed marshmallow error reporting for list/detail requests.
 
 
 0.10.1 (2019-08-27)
