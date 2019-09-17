@@ -13,7 +13,7 @@ def get_long_description():
 
 setup(
     name='flask-jsonapi',
-    version='0.10.3',
+    version='0.10.4.dev0',
     description='JSONAPI 1.0 implementation for Flask.',
     long_description=get_long_description(),
     long_description_content_type='text/markdown',
