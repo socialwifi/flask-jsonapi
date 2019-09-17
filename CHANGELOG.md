@@ -1,4 +1,4 @@
-0.10.3 (unreleased)
+0.10.3 (2019-09-17)
 -------------------
 
 - Fixed package description.
