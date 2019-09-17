@@ -1,7 +1,7 @@
 0.10.3 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Fixed package description.
 
 
 0.10.2 (2019-09-17)
