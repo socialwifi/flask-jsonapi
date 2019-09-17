@@ -5,10 +5,18 @@ except ImportError:
 from setuptools import find_packages
 from setuptools import setup
 
+
+def get_long_description():
+    with open('README.md') as readme_file:
+        return readme_file.read()
+
+
 setup(
     name='flask-jsonapi',
     version='0.10.3.dev0',
     description='JSONAPI 1.0 implementation for Flask.',
+    long_description=get_long_description(),
+    long_description_content_type='text/markdown',
     author='Social WiFi',
     author_email='it@socialwifi.com',
     url='https://github.com/socialwifi/flask-jsonapi',
