@@ -16,7 +16,7 @@ class CompleteNestedRelationship(fields.Relationship):
         data = {'data': data}
         schema = self.schema
         result = schema.load(data)
-        return result.data
+        return result
 
     def _serialize(self, value, attr, obj):
         dict_class = self.parent.dict_class if self.parent else dict
@@ -49,10 +49,7 @@ class CompleteNestedRelationship(fields.Relationship):
         return included_resource
 
     def _serialize_included_child(self, value):
-        result = self.schema.dump(value, **self._id_map_if_exist_in_parent_schema())
-        if result.errors:
-            raise ValidationError(result.errors)
-        return result.data['data']
+        return self.schema.dump(value, **self._id_map_if_exist_in_parent_schema())
 
     def _id_map_if_exist_in_parent_schema(self):
         return {'id_map': self.parent.id_map} if hasattr(self.parent, 'id_map') else {}

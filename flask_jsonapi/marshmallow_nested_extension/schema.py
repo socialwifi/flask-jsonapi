@@ -9,4 +9,4 @@ class IdMappingSchema:
         if self.id_map is not None:
             if hasattr(obj, 'id') and obj.id in self.id_map.keys():
                 obj.__id__ = self.id_map[obj.id]
-        return super().dump(obj, many, update_fields, **kwargs)
+        return super().dump(obj, many=many, **kwargs)
