@@ -1,5 +1,7 @@
 import logging
 
+import sqlalchemy.orm
+
 from sqlalchemy import exc
 from sqlalchemy import func
 from sqlalchemy.orm import exc as orm_exc
@@ -111,3 +113,48 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
         filtered_query = self.apply_filters(query, filters)
         count_query = filtered_query.statement.with_only_columns([func.count()])
         return self.session.execute(count_query).scalar()
+
+    def get_or_create(self, *, create_data=None, for_update=False, **kwargs):
+        query = self.session.query(self.model)
+        if for_update:
+            query = query.with_for_update()
+        try:
+            return query.filter_by(**kwargs).one()
+        except sqlalchemy.orm.exc.NoResultFound:
+            create_data = create_data or {}
+            build_data = kwargs.copy()
+            build_data.update(create_data)
+            with self.session.begin(subtransactions=True):
+                try:
+                    created = self.build(build_data)
+                    with self.session.begin(nested=True):
+                        self.session.add(created)
+                        self.session.flush()
+                    return created
+                except exc.IntegrityError as e:
+                    if 'duplicate key value violates unique constraint' in str(e.orig):
+                        return query.filter_by(**kwargs).one()
+                    else:
+                        raise
+
+    def update_or_create(self, *, update_data=None, **kwargs):
+        update_data = update_data or {}
+        updated_rows = self.session.query(self.model).filter_by(**kwargs).update(
+            update_data, synchronize_session=False)
+        if updated_rows == 0:
+            create_data = {}
+            create_data.update(kwargs)
+            create_data.update(update_data)
+            with self.session.begin(subtransactions=True):
+                try:
+                    created = self.build(create_data)
+                    with self.session.begin(nested=True):
+                        self.session.add(created)
+                        self.session.flush()
+                    return created
+                except exc.IntegrityError as e:
+                    if 'duplicate key value violates unique constraint' in str(e.orig):
+                        self.session.query(self.model).filter_by(**kwargs).update(
+                            update_data, synchronize_session=False)
+                    else:
+                        raise

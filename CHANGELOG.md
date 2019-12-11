@@ -2,6 +2,7 @@
 -------------------
 
 - Fixed marshmallow error reporting for list/detail requests.
+- Add get_or_create and update_or_create to SqlAlchemyModelRepository
 
 
 0.10.0 (2019-03-15)

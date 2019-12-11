@@ -56,3 +56,25 @@ class TestBasic:
         assert user.name == 'Mr. Bean'
         user = user_repository.update({'id': 123, 'name': 'Darth Vader'})
         assert user.name == 'Darth Vader'
+
+    def test_get_or_create_when_does_not_exist(self, user_repository):
+        user = user_repository.get_or_create(create_data={'name': 'Mr. Bean'}, id=123)
+        assert user.name == 'Mr. Bean'
+        user = user_repository.get_or_create(create_data={'name': 'Mr. Bean2'}, id=123)
+        assert user.name == 'Mr. Bean'
+
+    def test_get_or_create_when_exist(self, user_repository):
+        user_repository.create({'id': 123, 'name': 'Mr. Bean'})
+        user = user_repository.get_or_create(create_data={'name': 'Mr. Bean1'}, id=123)
+        assert user.name == 'Mr. Bean'
+
+    def test_update_or_create_when_does_not_exist(self, user_repository):
+        user_repository.update_or_create(update_data={'name': 'Mr. Bean'}, id=123)
+        user = user_repository.get_or_create(id=123)
+        assert user.name == 'Mr. Bean'
+
+    def test_update_or_create_when_exist(self, user_repository):
+        user_repository.create({'id': 123, 'name': 'Mr. Bean'})
+        user_repository.update_or_create(update_data={'name': 'Mr. Bean 2'}, id=123)
+        user = user_repository.get_or_create(id=123)
+        assert user.name == 'Mr. Bean 2'
