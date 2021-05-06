@@ -27,6 +27,6 @@ class NestedResourceList(resources.ResourceList):
         kwargs = {'id_map': id_map}
         object = self.create(data=data, **kwargs)
         return resources.response.JsonApiResponse(
-            self.schema().dump(object, **kwargs).data,
+            self.schema().dump(object, **kwargs),
             status=http.HTTPStatus.CREATED,
         )

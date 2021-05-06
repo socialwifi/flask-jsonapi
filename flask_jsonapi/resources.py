@@ -66,7 +66,7 @@ class ResourceDetail(ResourceBase):
         include_fields = self.include_parser.parse()
         sparse_fields = self.sparse_fields_parser.parse()
         try:
-            data, errors = self.schema(include_data=include_fields, only=sparse_fields).dump(resource)
+            data = self.schema(include_data=include_fields, only=sparse_fields).dump(resource)
         except marshmallow.ValidationError as e:
             raise exceptions.JsonApiException(detail='marshmallow.ValidationError', source=e.messages)
         except (AttributeError, KeyError, ValueError) as e:
@@ -76,10 +76,7 @@ class ResourceDetail(ResourceBase):
             )
             raise exceptions.JsonApiException(detail=str(e), source={'component': 'schema'})
         else:
-            if errors:
-                return response.JsonApiErrorResponse.from_marshmallow_errors(errors)
-            else:
-                return response.JsonApiResponse(data)
+            return response.JsonApiResponse(data)
 
     def delete(self, *args, **kwargs):
         self.destroy(self.resource_id)
@@ -88,18 +85,15 @@ class ResourceDetail(ResourceBase):
     def patch(self, *args, **kwargs):
         computed_schema = self.schema(partial=True)
         try:
-            data, errors = computed_schema.load(request.get_json())
+            data = computed_schema.load(request.get_json())
         except marshmallow.ValidationError as e:
             return response.JsonApiErrorResponse.from_marshmallow_errors(e.messages)
         else:
-            if errors:
-                return response.JsonApiErrorResponse.from_marshmallow_errors(errors)
+            resource = self.update(self.resource_id, data)
+            if resource:
+                return response.JsonApiResponse(computed_schema.dump(resource))
             else:
-                resource = self.update(self.resource_id, data)
-                if resource:
-                    return response.JsonApiResponse(computed_schema.dump(resource).data)
-                else:
-                    return response.EmptyResponse()
+                return response.EmptyResponse()
 
     @property
     def resource_id(self):
@@ -135,7 +129,7 @@ class ResourceList(ResourceBase):
         include_fields = self.include_parser.parse()
         sparse_fields = self.sparse_fields_parser.parse()
         try:
-            objects, errors = self.schema(
+            objects = self.schema(
                 many=True, include_data=include_fields, only=sparse_fields).dump(objects_list)
         except marshmallow.ValidationError as e:
             raise exceptions.JsonApiException(detail='marshmallow.ValidationError', source=e.messages)
@@ -146,14 +140,11 @@ class ResourceList(ResourceBase):
             )
             raise exceptions.JsonApiException(detail=str(e), source={'component': 'schema'})
         else:
-            if errors:
-                return response.JsonApiErrorResponse.from_marshmallow_errors(errors)
-            else:
-                pagination_links = self.get_pagination_links(parsed_pagination, parsed_filters)
-                return response.JsonApiListResponse(
-                    response_data=objects,
-                    links=pagination_links,
-                )
+            pagination_links = self.get_pagination_links(parsed_pagination, parsed_filters)
+            return response.JsonApiListResponse(
+                response_data=objects,
+                links=pagination_links,
+            )
 
     def get_pagination_links(self, parsed_pagination, parsed_filters):
         if parsed_pagination:
@@ -167,21 +158,18 @@ class ResourceList(ResourceBase):
 
     def post(self, *args, **kwargs):
         try:
-            data, errors = self.schema().load(request.get_json())
+            data = self.schema().load(request.get_json())
         except marshmallow_jsonapi_exceptions.IncorrectTypeError as e:
             return response.JsonApiErrorResponse.from_marshmallow_errors(e.messages)
         except marshmallow.ValidationError as e:
             return response.JsonApiErrorResponse.from_marshmallow_errors(e.messages)
         else:
-            if errors:
-                return response.JsonApiErrorResponse.from_marshmallow_errors(errors)
-            else:
-                return self.prepare_response(data)
+            return self.prepare_response(data)
 
     def prepare_response(self, data):
         object = self.create(data=data)
         return response.JsonApiResponse(
-            self.schema().dump(object).data,
+            self.schema().dump(object),
             status=http.HTTPStatus.CREATED,
         )
 

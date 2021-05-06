@@ -15,8 +15,7 @@ class CompleteNestedRelationship(fields.Relationship):
             raise ValidationError(errors)
         data = {'data': data}
         schema = self.schema
-        result = schema.load(data)
-        return result.data
+        return schema.load(data)
 
     def _serialize(self, value, attr, obj):
         dict_class = self.parent.dict_class if self.parent else dict
