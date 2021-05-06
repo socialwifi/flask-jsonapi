@@ -2,11 +2,11 @@ language: python
 sudo: required
 dist: xenial
 python:
-  - 3.7
+  - 3.9
 install:
   - pip install -r base_requirements.txt
   - pip install -U pytest==4.3.0 pytest-cov coveralls flake8 isort
-  - pip install sqlalchemy
+  - pip install sqlalchemy<1.4
 script:
   - flake8 .
   - isort -c
