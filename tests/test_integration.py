@@ -287,8 +287,7 @@ def test_bad_data_get_list(app):
     )
     result = json.loads(response.data.decode('utf-8'))
     assert result['errors'][0]['status'] == 500
-    assert result['errors'][0]['detail'] == 'marshmallow.ValidationError'
-    assert result['errors'][0]['source'] == {'0': {'number': ['"1" cannot be formatted as a datetime.']}}
+    assert result['errors'][0]['detail'] == "'int' object has no attribute 'isoformat'"
 
 
 def test_bad_data_get_detail(app):
@@ -303,5 +302,4 @@ def test_bad_data_get_detail(app):
     )
     result = json.loads(response.data.decode('utf-8'))
     assert result['errors'][0]['status'] == 500
-    assert result['errors'][0]['detail'] == 'marshmallow.ValidationError'
-    assert result['errors'][0]['source'] == {'number': ['"1" cannot be formatted as a datetime.']}
+    assert result['errors'][0]['detail'] == "'int' object has no attribute 'isoformat'"

@@ -209,22 +209,22 @@ class TestSparseFields:
         with pytest.raises(KeyError):
             with app.test_request_context('/parents/?fields[bad-type]=id'):
                 sparse_fields = parser.parse()
-                ParentSchema(strict=True, many=True, only=sparse_fields)
+                ParentSchema(many=True, only=sparse_fields)
 
     def test_invalid_field(self, app):
         parser = query_string.SparseFieldsParser(schema=ParentSchema)
         objects_list = ParentDetailRepository().get_detail('1234')
-        with pytest.raises(AttributeError):
+        with pytest.raises(ValueError):
             with app.test_request_context('/parents/?fields[parents]=id,bad_field'):
                 sparse_fields = parser.parse()
-                ParentSchema(strict=True, many=True, only=sparse_fields).dump(objects_list)
+                ParentSchema(many=True, only=sparse_fields).dump(objects_list)
 
     def test_no_id_field_specified(self, app):
         parser = query_string.SparseFieldsParser(schema=ParentSchema)
         with pytest.raises(ValueError):
             with app.test_request_context('/parents/?fields[parents]=no_id_field'):
                 sparse_fields = parser.parse()
-                ParentSchema(strict=True, many=True, only=sparse_fields)
+                ParentSchema(many=True, only=sparse_fields)
 
     def test_bad_resource(self, app):
         parser = query_string.SparseFieldsParser(schema=ParentSchema)
