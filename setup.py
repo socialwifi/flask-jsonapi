@@ -12,8 +12,9 @@ with pathlib.Path('base_requirements.txt').open() as requirements_txt:
 
 setup(
     name='flask-jsonapi',
-    version='0.20.0',
+    version='0.11.0',
     description='JSONAPI 1.0 implementation for Flask.',
+    long_description_content_type='text/markdown',
     author='Social WiFi',
     author_email='it@socialwifi.com',
     url='https://github.com/socialwifi/flask-jsonapi',
