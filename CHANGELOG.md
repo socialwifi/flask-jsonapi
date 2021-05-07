@@ -1,4 +1,4 @@
-0.20.0 (unreleased)
+0.11.0 (2021-05-07)
 -------------------
 
 - Migrate to Marshmallow 3.X
