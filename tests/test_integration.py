@@ -37,6 +37,18 @@ class ParentSchema(Schema):
         strict = True
 
 
+class TomatoSchema(Schema):
+    id = fields.Str(required=True)
+    name = fields.Str(required=True)
+
+    class Meta:
+        type_ = 'tomato'
+        self_view_many = 'tomato_list'
+        self_view = 'tomato_detail'
+        self_view_kwargs = {'tomato_id': '<id>'}
+        strict = True
+
+
 class ParentSchemaAtomic(IdMappingSchema, ParentSchema):
     descendant = CompleteNestedRelationship(
         schema=DescendantSchema,
@@ -54,6 +66,11 @@ class DescendantModel:
 
 
 class ParentModel:
+    def __init__(self, **kwargs):
+        self.id = kwargs['id']
+
+
+class TomatoModel:
     def __init__(self, **kwargs):
         self.id = kwargs['id']
 
@@ -109,6 +126,16 @@ class DescendantRepository(repositories.ResourceRepository):
         setattr(parent, 'descendant', [descendant])
 
 
+class TomatoRepository(repositories.ResourceRepository):
+    def create(self, data, **kwargs):
+        obj = TomatoModel(**data)
+        database_simulation[data['id']] = obj
+        return obj
+
+    def get_list(self, filters=None, sorting=None, pagination=None):
+        return database_simulation.values()
+
+
 class ParentRepository(repositories.ResourceRepository):
     children_repositories = {
         'descendant': ChildRepository(
@@ -140,6 +167,11 @@ class ParentResourceRepositoryViewSet(nested_resource_repositories.NestedResourc
 
     def __init__(self):
         super().__init__(repository=ParentRepository())
+
+
+class TomatoRepositoryViewSet(resource_repository_views.ResourceRepositoryViewSet):
+    schema = TomatoSchema
+    repository = TomatoRepository()
 
 
 class BadResourceRepositoryViewSet(resource_repository_views.ResourceRepositoryViewSet):
@@ -287,8 +319,7 @@ def test_bad_data_get_list(app):
     )
     result = json.loads(response.data.decode('utf-8'))
     assert result['errors'][0]['status'] == 500
-    assert result['errors'][0]['detail'] == 'marshmallow.ValidationError'
-    assert result['errors'][0]['source'] == {'0': {'number': ['"1" cannot be formatted as a datetime.']}}
+    assert result['errors'][0]['detail'] == "'int' object has no attribute 'isoformat'"
 
 
 def test_bad_data_get_detail(app):
@@ -303,5 +334,49 @@ def test_bad_data_get_detail(app):
     )
     result = json.loads(response.data.decode('utf-8'))
     assert result['errors'][0]['status'] == 500
-    assert result['errors'][0]['detail'] == 'marshmallow.ValidationError'
-    assert result['errors'][0]['source'] == {'number': ['"1" cannot be formatted as a datetime.']}
+    assert result['errors'][0]['detail'] == "'int' object has no attribute 'isoformat'"
+
+
+def test_create_with_missing_data(app):
+    application_api = api.Api(app)
+    application_api.repository(TomatoRepositoryViewSet(), 'tomatoes', '/tomatoes/')
+
+    json_data = json.dumps({
+        'data': {
+            'type': 'tomato',
+            'id': '61042c6f-0c83-4c26-aa74-2cfbd025879a',
+        }
+    })
+    response = app.test_client().post(
+        '/tomatoes/',
+        headers=JSONAPI_HEADERS,
+        data=json_data,
+    )
+    result = json.loads(response.data.decode('utf-8'))
+    errors = result['errors']
+    assert errors[0]['detail'] in 'Missing data for required field.'
+    assert errors[0]['source'] == {'pointer': '/data/attributes/name'}
+
+
+def test_create_with_invalid_data(app):
+    application_api = api.Api(app)
+    application_api.repository(TomatoRepositoryViewSet(), 'tomatoes', '/tomatoes/')
+
+    json_data = json.dumps({
+        'data': {
+            'type': 'tomato',
+            'id': 1234,
+            'attributes': {
+                'name': 'red',
+            },
+        },
+    })
+    response = app.test_client().post(
+        '/tomatoes/',
+        headers=JSONAPI_HEADERS,
+        data=json_data,
+    )
+    result = json.loads(response.data.decode('utf-8'))
+    errors = result['errors']
+    assert errors[0]['detail'] in 'Not a valid string.'
+    assert errors[0]['source'] == {'pointer': '/data/id'}

@@ -1,7 +1,7 @@
-0.10.4 (unreleased)
+0.20.0 (unreleased)
 -------------------
 
-- Nothing changed yet.
+- Migrate to Marshmallow 3.X
 
 
 0.10.3 (2019-09-17)
