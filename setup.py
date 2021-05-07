@@ -10,10 +10,17 @@ with pathlib.Path('base_requirements.txt').open() as requirements_txt:
         str(requirement) for requirement in pkg_resources.parse_requirements(requirements_txt)
     ]
 
+
+def get_long_description():
+    with open('README.md') as readme_file:
+        return readme_file.read()
+
+
 setup(
     name='flask-jsonapi',
     version='0.11.0',
     description='JSONAPI 1.0 implementation for Flask.',
+    long_description=get_long_description(),
     long_description_content_type='text/markdown',
     author='Social WiFi',
     author_email='it@socialwifi.com',
