@@ -20,12 +20,19 @@
     license: BSD, see LICENSE for more details.
 """
 from sqlalchemy.orm import joinedload
-from sqlalchemy.orm import joinedload_all
 from sqlalchemy.orm.base import _entity_descriptor
 from sqlalchemy.orm.query import Query
 from sqlalchemy.sql import extract
 from sqlalchemy.sql import operators
 from sqlalchemy.util import to_list
+
+
+def joinedload_all(column):
+    elements = column.split('.')
+    joined = joinedload(elements.pop(0))
+    for element in elements:
+        joined = joined.joinedload(element)
+    return joined
 
 
 class DjangoQueryMixin(object):
