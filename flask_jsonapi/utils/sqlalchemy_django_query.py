@@ -20,12 +20,13 @@
     license: BSD, see LICENSE for more details.
 """
 from sqlalchemy.orm import joinedload
-from sqlalchemy.orm import context
+from sqlalchemy import util
 from sqlalchemy.orm.base import _entity_descriptor
 from sqlalchemy.orm.query import Query
 from sqlalchemy.sql import extract
 from sqlalchemy.sql import operators
 from sqlalchemy.util import to_list
+from sqlalchemy.orm import context
 
 
 def joinedload_all(column):
@@ -47,6 +48,7 @@ class DjangoQueryMixin:
     -   `order_by` supports ordering by field name with an optional `-`
         in front.
     """
+    _joinpath = _joinpoint = util.immutabledict()
     _underscore_operators = {
         'eq':           operators.eq,
         'ne':           operators.ne,
@@ -155,6 +157,9 @@ class DjangoQueryMixin:
             q = q.reset_joinpoint()
         return q
 
+    def _joinpoint_zero(self):
+        return self._joinpoint.get("_joinpoint_entity", None)
 
-class DjangoQuery(DjangoQueryMixin, context.ORMSelectCompileState, Query):
+
+class DjangoQuery(DjangoQueryMixin, Query):
     pass
