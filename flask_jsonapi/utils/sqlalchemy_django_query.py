@@ -20,6 +20,7 @@
     license: BSD, see LICENSE for more details.
 """
 from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import context
 from sqlalchemy.orm.base import _entity_descriptor
 from sqlalchemy.orm.query import Query
 from sqlalchemy.sql import extract
@@ -35,7 +36,7 @@ def joinedload_all(column):
     return joined
 
 
-class DjangoQueryMixin(object):
+class DjangoQueryMixin:
     """Can be mixed into any Query class of SQLAlchemy and extends it to
     implements more Django like behavior:
 
@@ -155,5 +156,5 @@ class DjangoQueryMixin(object):
         return q
 
 
-class DjangoQuery(DjangoQueryMixin, Query):
+class DjangoQuery(DjangoQueryMixin, context.ORMSelectCompileState, Query):
     pass
