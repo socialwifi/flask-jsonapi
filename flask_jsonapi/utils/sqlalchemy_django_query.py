@@ -20,13 +20,12 @@
     license: BSD, see LICENSE for more details.
 """
 from sqlalchemy.orm import joinedload
-from sqlalchemy import util
+from sqlalchemy.orm import context
 from sqlalchemy.orm.base import _entity_descriptor
 from sqlalchemy.orm.query import Query
 from sqlalchemy.sql import extract
 from sqlalchemy.sql import operators
 from sqlalchemy.util import to_list
-from sqlalchemy.orm import context
 
 
 def joinedload_all(column):
@@ -48,7 +47,9 @@ class DjangoQueryMixin:
     -   `order_by` supports ordering by field name with an optional `-`
         in front.
     """
-    _joinpath = _joinpoint = util.immutabledict()
+    _select_from_entity = None
+    _joinpath = _joinpoint = context._EMPTY_DICT
+    _entities = []
     _underscore_operators = {
         'eq':           operators.eq,
         'ne':           operators.ne,
@@ -158,7 +159,22 @@ class DjangoQueryMixin:
         return q
 
     def _joinpoint_zero(self):
-        return self._joinpoint.get("_joinpoint_entity", None)
+        return self._joinpoint.get("_joinpoint_entity", self._entity_zero())
+
+    def _entity_zero(self):
+        """Return the 'entity' (mapper or AliasedClass) associated
+        with the first QueryEntity, or alternatively the 'select from'
+        entity if specified."""
+
+        return (
+            self._select_from_entity
+            if self._select_from_entity is not None
+            else self._query_entity_zero().entity_zero
+        )
+
+    def _query_entity_zero(self):
+        """Return the first QueryEntity."""
+        return self._entities[0]
 
 
 class DjangoQuery(DjangoQueryMixin, Query):
