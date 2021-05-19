@@ -1,7 +1,6 @@
 import logging
 
 from sqlalchemy import exc
-from sqlalchemy import func
 from sqlalchemy.orm import exc as orm_exc
 
 from flask_jsonapi import exceptions
