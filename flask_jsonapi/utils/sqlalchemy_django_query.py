@@ -20,12 +20,22 @@
     license: BSD, see LICENSE for more details.
 """
 from sqlalchemy.orm import joinedload
-from sqlalchemy.orm import joinedload_all
 from sqlalchemy.orm.base import _entity_descriptor
 from sqlalchemy.orm.query import Query
 from sqlalchemy.sql import extract
 from sqlalchemy.sql import operators
 from sqlalchemy.util import to_list
+from sqlalchemy import exc
+from sqlalchemy_utils import get_mapper
+from flask_jsonapi import exceptions
+
+
+def joinedload_all(column):
+    elements = column.split('.')
+    joined = joinedload(elements.pop(0))
+    for element in elements:
+        joined = joined.joinedload(element)
+    return joined
 
 
 class DjangoQueryMixin(object):
@@ -100,16 +110,16 @@ class DjangoQueryMixin(object):
                 arg = arg[1:]
             else:
                 desc = False
-            q = self
             column = None
             for token in arg.split('__'):
-                column = _entity_descriptor(q._joinpoint_zero(), token)
-                if column.impl.uses_objects:
+                column = get_column(self._compile_state()._joinpoint_zero(), token, joins_needed)
+                if column and column.impl.uses_objects:
                     q = q.join(column)
                     joins_needed.append(column)
                     column = None
             if column is None:
-                raise ValueError('Tried to order by table, column expected')
+                raise exceptions.InvalidSort(
+                    "You can't sort on {}".format(token))
             if desc:
                 column = column.desc()
             args[idx] = column
@@ -123,13 +133,14 @@ class DjangoQueryMixin(object):
         q = self
         negate_if = lambda expr: expr if not negate else ~expr
         column = None
-
+        joins_needed = []
         for arg, value in kwargs.items():
             for token in arg.split('__'):
                 if column is None:
-                    column = _entity_descriptor(q._joinpoint_zero(), token)
-                    if column.impl.uses_objects:
+                    column = get_column(self._compile_state()._joinpoint_zero(), token, joins_needed)
+                    if column and column.impl.uses_objects:
                         q = q.join(column)
+                        joins_needed.append(column)
                         column = None
                 elif token in self._underscore_operators:
                     op = self._underscore_operators[token]
@@ -150,3 +161,15 @@ class DjangoQueryMixin(object):
 
 class DjangoQuery(DjangoQueryMixin, Query):
     pass
+
+
+def get_column(joinpoint, token, joins_needed):
+    try:
+        return _entity_descriptor(get_mapper(joinpoint), token)
+    except exc.InvalidRequestError:
+        pass
+    for join in joins_needed:
+        try:
+            return _entity_descriptor(join, token)
+        except exc.InvalidRequestError:
+            pass

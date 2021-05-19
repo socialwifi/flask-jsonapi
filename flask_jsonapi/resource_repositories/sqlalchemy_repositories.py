@@ -107,7 +107,4 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
         setattr(obj, key, new_value)
 
     def get_count(self, filters=None):
-        query = self.get_query()
-        filtered_query = self.apply_filters(query, filters)
-        count_query = filtered_query.statement.with_only_columns([func.count()])
-        return self.session.execute(count_query).scalar()
+        return self.get_query().count()
