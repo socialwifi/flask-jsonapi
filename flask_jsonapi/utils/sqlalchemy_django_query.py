@@ -138,7 +138,7 @@ class DjangoQueryMixin(object):
         for arg, value in kwargs.items():
             for token in arg.split('__'):
                 if column is None:
-                    column = get_column(self._compile_state()._joinpoint_zero(), token, joins_needed)
+                    column = get_column(self._filter_by_zero(), token, joins_needed)
                     if column and column.impl.uses_objects:
                         q = q.join(column)
                         joins_needed.append(column)
