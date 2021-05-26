@@ -167,8 +167,10 @@ class DjangoQuery(DjangoQueryMixin, Query):
 def get_column(joinpoint, token, joins_needed):
     try:
         return _entity_descriptor(get_mapper(joinpoint), token)
-    except (exc.InvalidRequestError, ValueError):
+    except exc.InvalidRequestError:
         pass
+    except ValueError:
+        return _entity_descriptor(get_mapper(joinpoint.__table__), token)
     for join in joins_needed:
         try:
             return _entity_descriptor(join, token)
