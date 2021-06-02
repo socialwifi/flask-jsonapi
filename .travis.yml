@@ -7,7 +7,7 @@ python:
   - 3.9
 install:
   - pip install -r base_requirements.txt
-  - pip install -U pytest==4.3.0 pytest-cov coveralls flake8 isort
+  - pip install -U 'pytest>=6.2' pytest-cov coveralls flake8 isort
   - pip install 'sqlalchemy>=1.4' sqlalchemy_utils
 script:
   - flake8 .
