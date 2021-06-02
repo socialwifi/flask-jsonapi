@@ -22,7 +22,7 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
         obj = self.build(data)
         self.session.add(obj)
         try:
-            self.session.flush()
+            self.session.commit()
             return obj
         except exc.SQLAlchemyError as error:
             logger.exception(error)
@@ -53,7 +53,7 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
         obj = self.get_detail(id)
         try:
             self.session.delete(obj)
-            self.session.flush()
+            self.session.commit()
         except exc.SQLAlchemyError as error:
             logger.exception(error)
             raise ForbiddenError(detail='Error while deleting {}.'.format(self.instance_name))
@@ -64,7 +64,7 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
         for key, value in data.items():
             self.update_attribute(obj, key, value)
         try:
-            self.session.flush()
+            self.session.commit()
             return obj
         except exc.SQLAlchemyError as error:
             logger.exception(error)
@@ -109,5 +109,5 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
     def get_count(self, filters=None):
         query = self.get_query()
         filtered_query = self.apply_filters(query, filters)
-        count_query = filtered_query.statement.with_only_columns([func.count()])
+        count_query = filtered_query.statement.with_only_columns(func.count(self.model.id))
         return self.session.execute(count_query).scalar()

@@ -19,13 +19,24 @@
     :copyright: 2011 by Armin Ronacher, Mike Bayer.
     license: BSD, see LICENSE for more details.
 """
+from sqlalchemy import exc
 from sqlalchemy.orm import joinedload
-from sqlalchemy.orm import joinedload_all
 from sqlalchemy.orm.base import _entity_descriptor
 from sqlalchemy.orm.query import Query
 from sqlalchemy.sql import extract
 from sqlalchemy.sql import operators
 from sqlalchemy.util import to_list
+from sqlalchemy_utils.functions import orm
+
+from flask_jsonapi import exceptions
+
+
+def joinedload_all(column):
+    elements = column.split('.')
+    joined = joinedload(elements.pop(0))
+    for element in elements:
+        joined = joined.joinedload(element)
+    return joined
 
 
 class DjangoQueryMixin(object):
@@ -100,16 +111,16 @@ class DjangoQueryMixin(object):
                 arg = arg[1:]
             else:
                 desc = False
-            q = self
             column = None
             for token in arg.split('__'):
-                column = _entity_descriptor(q._joinpoint_zero(), token)
-                if column.impl.uses_objects:
+                column = get_column(self._filter_by_zero(), token, joins_needed)
+                if column and column.impl.uses_objects:
                     q = q.join(column)
                     joins_needed.append(column)
                     column = None
             if column is None:
-                raise ValueError('Tried to order by table, column expected')
+                raise exceptions.InvalidSort(
+                    "You can't sort on {}, {}".format(token, str(arg)))
             if desc:
                 column = column.desc()
             args[idx] = column
@@ -123,13 +134,14 @@ class DjangoQueryMixin(object):
         q = self
         negate_if = lambda expr: expr if not negate else ~expr
         column = None
-
+        joins_needed = []
         for arg, value in kwargs.items():
             for token in arg.split('__'):
                 if column is None:
-                    column = _entity_descriptor(q._joinpoint_zero(), token)
-                    if column.impl.uses_objects:
+                    column = get_column(self._filter_by_zero(), token, joins_needed)
+                    if column and column.impl.uses_objects:
                         q = q.join(column)
+                        joins_needed.append(column)
                         column = None
                 elif token in self._underscore_operators:
                     op = self._underscore_operators[token]
@@ -150,3 +162,87 @@ class DjangoQueryMixin(object):
 
 class DjangoQuery(DjangoQueryMixin, Query):
     pass
+
+
+def get_column(joinpoint, token, joins_needed):
+    try:
+        result = _entity_descriptor(get_mapper(joinpoint), token)
+        if type(result) != property:
+            return result
+    except exc.InvalidRequestError:
+        pass
+    for join in joins_needed:
+        try:
+            return _entity_descriptor(join, token)
+        except exc.InvalidRequestError:
+            pass
+
+
+def get_mapper(mixed):
+    """
+    Return related SQLAlchemy Mapper for given SQLAlchemy object.
+
+    :param mixed: SQLAlchemy Table / Alias / Mapper / declarative model object
+
+    ::
+
+        from sqlalchemy_utils import get_mapper
+
+
+        get_mapper(User)
+
+        get_mapper(User())
+
+        get_mapper(User.__table__)
+
+        get_mapper(User.__mapper__)
+
+        get_mapper(sa.orm.aliased(User))
+
+        get_mapper(sa.orm.aliased(User.__table__))
+
+
+    Raises:
+        ValueError: if multiple mappers were found for given argument
+
+    .. versionadded: 0.26.1
+    """
+    if isinstance(mixed, orm._MapperEntity):
+        mixed = mixed.expr
+    elif isinstance(mixed, orm.sa.Column):
+        mixed = mixed.table
+    elif isinstance(mixed, orm._ColumnEntity):
+        mixed = mixed.expr
+
+    if isinstance(mixed, orm.sa.orm.Mapper):
+        return mixed
+    if isinstance(mixed, orm.sa.orm.util.AliasedClass):
+        return orm.sa.inspect(mixed).mapper
+    if isinstance(mixed, orm.sa.sql.selectable.Alias):
+        mixed = mixed.element
+    if isinstance(mixed, orm.AliasedInsp):
+        return mixed.mapper
+    if isinstance(mixed, orm.sa.orm.attributes.InstrumentedAttribute):
+        mixed = mixed.class_
+    if isinstance(mixed, orm.sa.Table):
+        if hasattr(orm.mapperlib, '_all_registries'):
+            all_mappers = set()
+            for mapper_registry in orm.mapperlib._all_registries():
+                all_mappers.update(mapper_registry.mappers)
+        else:  # SQLAlchemy <1.4
+            all_mappers = orm.mapperlib._mapper_registry
+        mappers = [
+            mapper for mapper in all_mappers
+            if mixed in {mapper.local_table}
+        ]
+        if len(mappers) > 1:
+            raise Exception('Still to many mappers %s' % str(mappers))
+        if not mappers:
+            raise ValueError(
+                "Could not get mapper for table '%s'." % mixed.name
+            )
+        else:
+            return mappers[0]
+    if not orm.isclass(mixed):
+        mixed = type(mixed)
+    return orm.sa.inspect(mixed)
