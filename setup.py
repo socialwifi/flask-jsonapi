@@ -30,7 +30,7 @@ setup(
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
     extras_require={
-        'sqlalchemy': ['sqlalchemy']
+        'sqlalchemy': ['sqlalchemy', 'sqlalchemy_utils']
     },
     license='BSD',
     classifiers=[
