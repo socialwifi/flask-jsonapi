@@ -18,7 +18,7 @@ def get_long_description():
 
 setup(
     name='flask-jsonapi',
-    version='0.11.1.dev0',
+    version='1.0.0',
     description='JSONAPI 1.0 implementation for Flask.',
     long_description=get_long_description(),
     long_description_content_type='text/markdown',
@@ -34,7 +34,7 @@ setup(
     },
     license='BSD',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',

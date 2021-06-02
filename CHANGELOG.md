@@ -1,5 +1,5 @@
-0.11.1 (unreleased)
--------------------
+1.0.0 (2021-06-02)
+------------------
 
 - Remove old nested repositories support
 
