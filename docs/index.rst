@@ -196,6 +196,8 @@ Table of Contents
    views
    repositories
    including_relationships
+   sparse_fieldsets
    filtering
+   sorting
    pagination
    extensions
