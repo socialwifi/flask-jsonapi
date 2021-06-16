@@ -46,7 +46,7 @@ class SizeNumberPagination(Pagination):
     def _format_links(self, current_page, previous_page, next_page, last_page):
         request_args = flask.request.args.copy()
         request_args.pop('page[number]')
-        base_link = '{}?{}'.format(flask.request.base_url, parse.unquote(parse.urlencode(request_args)))
+        base_link = self._get_base_url(request_args)
         format_query_string = base_link + '&page[number]={}'
         return {
             'self': format_query_string.format(current_page),
@@ -55,6 +55,15 @@ class SizeNumberPagination(Pagination):
             'next': format_query_string.format(next_page) if next_page else None,
             'last': format_query_string.format(last_page),
         }
+
+    @staticmethod
+    def _get_base_url(request_args):
+        endpoint = flask.request.headers.get('X-Original-Path')
+        if endpoint:
+            endpoint_url = parse.urljoin(flask.request.host_url, endpoint)
+        else:
+            endpoint_url = flask.request.base_url
+        return '{}?{}'.format(endpoint_url, parse.unquote(parse.urlencode(request_args)))
 
 
 class IncludeParser:
