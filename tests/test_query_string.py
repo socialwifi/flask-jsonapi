@@ -90,6 +90,20 @@ class TestSizeNumberPagination:
                 'last': 'http://localhost/examples/?page[size]=10&page[number]=5'
             }
 
+    def test_links_with_header(self, app):
+        with app.test_request_context('/examples/?page[size]=10&page[number]=1', headers={
+            'X-Original-Path': '/prefix/examples/',
+        }):
+            links = query_string.SizeNumberPagination().get_links(
+                page_size=10, current_page=3, total_count=50)
+            assert links == {
+                'self': 'http://localhost/prefix/examples/?page[size]=10&page[number]=3',
+                'first': 'http://localhost/prefix/examples/?page[size]=10&page[number]=1',
+                'previous': 'http://localhost/prefix/examples/?page[size]=10&page[number]=2',
+                'next': 'http://localhost/prefix/examples/?page[size]=10&page[number]=4',
+                'last': 'http://localhost/prefix/examples/?page[size]=10&page[number]=5'
+            }
+
 
 class TestSortParser:
     def test_sorting(self, app, sort_parser):
