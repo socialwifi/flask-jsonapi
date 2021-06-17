@@ -1,4 +1,4 @@
-1.0.1 (unreleased)
+1.1.0 (2021-06-17)
 ------------------
 
 - Add support for custom pagination links via X-Original-Path header.
