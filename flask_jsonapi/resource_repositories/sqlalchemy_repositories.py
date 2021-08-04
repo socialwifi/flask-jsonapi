@@ -21,11 +21,7 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
     def create(self, data, **kwargs):
         obj = self.build(data)
         self.session.add(obj)
-        try:
-            return obj
-        except exc.SQLAlchemyError as error:
-            logger.exception(error)
-            raise ForbiddenError(detail='{} could not be created.'.format(self.instance_name.capitalize()))
+        return obj
 
     def get_list(self, filters=None, sorting=None, pagination=None):
         try:
@@ -61,11 +57,7 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
         obj = self.get_detail(id)
         for key, value in data.items():
             self.update_attribute(obj, key, value)
-        try:
-            return obj
-        except exc.SQLAlchemyError as error:
-            logger.exception(error)
-            raise ForbiddenError(detail='Error while updating {}.'.format(self.instance_name))
+        return obj
 
     def get_query(self):
         return sqlalchemy_django_query.DjangoQuery(self.model, session=self.session())
