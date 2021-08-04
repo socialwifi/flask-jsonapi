@@ -46,11 +46,7 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
 
     def delete(self, id):
         obj = self.get_detail(id)
-        try:
-            self.session.delete(obj)
-        except exc.SQLAlchemyError as error:
-            logger.exception(error)
-            raise ForbiddenError(detail='Error while deleting {}.'.format(self.instance_name))
+        self.session.delete(obj)
 
     def update(self, data, **kwargs):
         id = data['id']
