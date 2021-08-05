@@ -22,7 +22,8 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
         obj = self.build(data)
         self.session.add(obj)
         try:
-            self.session.commit()
+            if kwargs.get('commit', True):
+                self.session.commit()
             return obj
         except exc.SQLAlchemyError as error:
             logger.exception(error)
@@ -49,11 +50,12 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
             logger.exception(error)
             raise ForbiddenError(detail='Error while getting {} details.'.format(self.instance_name))
 
-    def delete(self, id):
+    def delete(self, id, commit=True):
         obj = self.get_detail(id)
         try:
             self.session.delete(obj)
-            self.session.commit()
+            if commit:
+                self.session.commit()
         except exc.SQLAlchemyError as error:
             logger.exception(error)
             raise ForbiddenError(detail='Error while deleting {}.'.format(self.instance_name))
@@ -64,7 +66,8 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
         for key, value in data.items():
             self.update_attribute(obj, key, value)
         try:
-            self.session.commit()
+            if kwargs.get('commit', True):
+                self.session.commit()
             return obj
         except exc.SQLAlchemyError as error:
             logger.exception(error)
