@@ -21,9 +21,9 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
     def create(self, data, **kwargs):
         obj = self.build(data)
         self.session.add(obj)
+        strategy = kwargs.get('strategy', 'commit')
         try:
-            if kwargs.get('commit', True):
-                self.session.commit()
+            self._run_session_strategy(strategy)
             return obj
         except exc.SQLAlchemyError as error:
             logger.exception(error)
@@ -50,12 +50,11 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
             logger.exception(error)
             raise ForbiddenError(detail='Error while getting {} details.'.format(self.instance_name))
 
-    def delete(self, id, commit=True):
+    def delete(self, id, strategy='commit'):
         obj = self.get_detail(id)
         try:
             self.session.delete(obj)
-            if commit:
-                self.session.commit()
+            self._run_session_strategy(strategy)
         except exc.SQLAlchemyError as error:
             logger.exception(error)
             raise ForbiddenError(detail='Error while deleting {}.'.format(self.instance_name))
@@ -65,13 +64,19 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
         obj = self.get_detail(id)
         for key, value in data.items():
             self.update_attribute(obj, key, value)
+        strategy = kwargs.get('strategy', 'commit')
         try:
-            if kwargs.get('commit', True):
-                self.session.commit()
+            self._run_session_strategy(strategy)
             return obj
         except exc.SQLAlchemyError as error:
             logger.exception(error)
             raise ForbiddenError(detail='Error while updating {}.'.format(self.instance_name))
+
+    def _run_session_strategy(self, strategy):
+        if strategy == 'commit':
+            self.session.commit()
+        if strategy == 'flush':
+            self.session.flush()
 
     def get_query(self):
         return sqlalchemy_django_query.DjangoQuery(self.model, session=self.session())
