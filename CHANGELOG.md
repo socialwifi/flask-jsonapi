@@ -1,4 +1,4 @@
-1.1.1 (unreleased)
+1.2.0 (2021-11-22)
 ------------------
 
 - Parametrize session commits.
