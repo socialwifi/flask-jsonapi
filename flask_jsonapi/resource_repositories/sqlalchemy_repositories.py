@@ -18,11 +18,11 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
     instance_name = 'model instance'
     filter_methods_map = {}
 
-    def create(self, data, **kwargs):
+    def create(self, data, strategy='commit', **kwargs):
         obj = self.build(data)
         self.session.add(obj)
         try:
-            self.session.commit()
+            self._run_session_strategy(strategy)
             return obj
         except exc.SQLAlchemyError as error:
             logger.exception(error)
@@ -49,26 +49,32 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
             logger.exception(error)
             raise ForbiddenError(detail='Error while getting {} details.'.format(self.instance_name))
 
-    def delete(self, id):
+    def delete(self, id, strategy='commit'):
         obj = self.get_detail(id)
         try:
             self.session.delete(obj)
-            self.session.commit()
+            self._run_session_strategy(strategy)
         except exc.SQLAlchemyError as error:
             logger.exception(error)
             raise ForbiddenError(detail='Error while deleting {}.'.format(self.instance_name))
 
-    def update(self, data, **kwargs):
+    def update(self, data, strategy='commit', **kwargs):
         id = data['id']
         obj = self.get_detail(id)
         for key, value in data.items():
             self.update_attribute(obj, key, value)
         try:
-            self.session.commit()
+            self._run_session_strategy(strategy)
             return obj
         except exc.SQLAlchemyError as error:
             logger.exception(error)
             raise ForbiddenError(detail='Error while updating {}.'.format(self.instance_name))
+
+    def _run_session_strategy(self, strategy):
+        if strategy == 'commit':
+            self.session.commit()
+        if strategy == 'flush':
+            self.session.flush()
 
     def get_query(self):
         return sqlalchemy_django_query.DjangoQuery(self.model, session=self.session())
