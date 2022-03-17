@@ -1,7 +1,7 @@
 1.2.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Allow overriding resource action methods in protected views.
 
 
 1.2.0 (2021-11-22)
