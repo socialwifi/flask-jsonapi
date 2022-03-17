@@ -451,3 +451,180 @@ def test_creating_view_with_dynamic_schema(api, jsonapi_client):
             'version': '1.0'
         }
     }
+
+
+class TestAllowedActions:
+    class ExampleDetailView(resources.AllowedActionsResourceDetailMixin, resources.ResourceDetail):
+        schema = ExampleSchema
+
+        def read(self, id):
+            return resource_factory(id=id, body='xyz')
+
+        def update(self, id, data, **kwargs):
+            data.pop('id')
+            return resource_factory(id=id, **data)
+
+        def destroy(self, id):
+            pass
+
+    class ExampleListView(resources.AllowedActionsResourceListMixin, resources.ResourceList):
+        schema = ExampleSchema
+
+        def read_many(self, *args, **kwargs):
+            return [
+                resource_factory(id='11111111-1111-1111-1111-111111111111', body='one'),
+                resource_factory(id='22222222-2222-2222-2222-222222222222', body='two'),
+            ]
+
+        def create(self, *args, **kwargs):
+            return resource_factory(**kwargs['data'])
+
+    def test_create_is_allowed(self, api, jsonapi_client):
+        api.route(self.ExampleListView, 'example', '/examples', view_kwargs={
+            'allowed_actions': (resources.Actions.create,)
+        })
+
+        response = jsonapi_client.post(
+            '/examples',
+            json={
+                'data': {
+                    'type': 'example',
+                    'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a4',
+                    'attributes': {
+                        'body': "Nice body.",
+                    }
+                }
+            },
+        )
+
+        assert response.status_code == 201
+
+    def test_create_is_not_allowed(self, api, jsonapi_client):
+        api.route(self.ExampleListView, 'example', '/examples')
+
+        response = jsonapi_client.post(
+            '/examples',
+            json={
+                'data': {
+                    'type': 'example',
+                    'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a4',
+                    'attributes': {
+                        'body': "Nice body.",
+                    }
+                }
+            },
+        )
+
+        assert response.status_code == 405
+        result = response.get_json(force=True)
+        assert len(result['errors']) == 1
+        error = result['errors'][0]
+        assert error['detail'] == 'Create is not allowed for this resource'
+
+    def test_get_list_is_allowed(self, api, jsonapi_client):
+        api.route(self.ExampleListView, 'example', '/examples', view_kwargs={
+            'allowed_actions': (resources.Actions.read_many,)
+        })
+
+        response = jsonapi_client.get('/examples')
+
+        assert response.status_code == 200
+        results = response.get_json(force=True)
+        assert len(results['data']) == 2
+
+    def test_get_list_is_not_allowed(self, api, jsonapi_client):
+        api.route(self.ExampleListView, 'example', '/examples')
+
+        response = jsonapi_client.get('/examples')
+
+        assert response.status_code == 405
+        result = response.get_json(force=True)
+        assert len(result['errors']) == 1
+        error = result['errors'][0]
+        assert error['detail'] == 'Fetch list is not allowed for this resource'
+
+    def test_get_is_allowed(self, api, jsonapi_client):
+        api.route(self.ExampleDetailView, 'example', '/examples/<id>', view_kwargs={
+            'allowed_actions': (resources.Actions.read,)
+        })
+
+        response = jsonapi_client.get('/examples/11111111-1111-1111-1111-111111111111')
+
+        assert response.status_code == 200
+        result = response.get_json(force=True)
+        assert result['data']['id'] == '11111111-1111-1111-1111-111111111111'
+
+    def test_get_is_not_allowed(self, api, jsonapi_client):
+        api.route(self.ExampleDetailView, 'example', '/examples/<id>')
+
+        response = jsonapi_client.get('/examples/11111111-1111-1111-1111-111111111111')
+
+        assert response.status_code == 405
+        result = response.get_json(force=True)
+        assert len(result['errors']) == 1
+        error = result['errors'][0]
+        assert error['detail'] == 'Fetch is not allowed for this resource'
+
+    def test_patch_is_allowed(self, api, jsonapi_client):
+        api.route(self.ExampleDetailView, 'example', '/examples/<id>', view_kwargs={
+            'allowed_actions': (resources.Actions.update,)
+        })
+
+        response = jsonapi_client.patch(
+            '/examples/11111111-1111-1111-1111-111111111111',
+            json={
+                'data': {
+                    'type': 'example',
+                    'id': '11111111-1111-1111-1111-111111111111',
+                    'attributes': {
+                        'body': 'two',
+                    }
+                }
+            }
+        )
+
+        assert response.status_code == 200
+        result = response.get_json(force=True)
+        assert result['data']['attributes']['body'] == 'two'
+
+    def test_patch_is_not_allowed(self, api, jsonapi_client):
+        api.route(self.ExampleDetailView, 'example', '/examples/<id>')
+
+        response = jsonapi_client.patch(
+            '/examples/11111111-1111-1111-1111-111111111111',
+            json={
+                'data': {
+                    'type': 'example',
+                    'id': '11111111-1111-1111-1111-111111111111',
+                    'attributes': {
+                        'body': 'two',
+                    }
+                }
+            }
+        )
+
+        assert response.status_code == 405
+        result = response.get_json(force=True)
+        assert len(result['errors']) == 1
+        error = result['errors'][0]
+        assert error['detail'] == 'Update is not allowed for this resource'
+
+    def test_delete_is_allowed(self, api, jsonapi_client):
+        api.route(self.ExampleDetailView, 'example', '/examples/<id>', view_kwargs={
+            'allowed_actions': (resources.Actions.destroy,)
+        })
+
+        response = jsonapi_client.delete('/examples/11111111-1111-1111-1111-111111111111')
+
+        assert response.status_code == 204
+
+    def test_delete_is_not_allowed(self, api, jsonapi_client):
+        api.route(self.ExampleDetailView, 'example', '/examples/<id>')
+
+        response = jsonapi_client.delete('/examples/11111111-1111-1111-1111-111111111111')
+
+        assert response.status_code == 405
+        result = response.get_json(force=True)
+        assert len(result['errors']) == 1
+        error = result['errors'][0]
+        assert error['detail'] == 'Delete is not allowed for this resource'
