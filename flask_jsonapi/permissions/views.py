@@ -5,7 +5,6 @@ from flask_jsonapi import ResourceRepositoryDetailView
 from flask_jsonapi import ResourceRepositoryListView
 from flask_jsonapi import ResourceRepositoryViewSet
 from flask_jsonapi import descriptors
-from flask_jsonapi import exceptions
 
 from . import checkers
 
@@ -37,18 +36,6 @@ class ProtectedListView(ResourceRepositoryListView, abc.ABC):
     def __init__(self, permission_checker: checkers.PermissionChecker, **kwargs):
         super().__init__(**kwargs)
         self.permission_checker = permission_checker
-
-    def get(self, *args, **kwargs):
-        try:
-            return super().get(*args, **kwargs)
-        except checkers.PermissionException:
-            raise exceptions.ForbiddenError("You don't have permissions")
-
-    def post(self, *args, **kwargs):
-        try:
-            return super().post(*args, **kwargs)
-        except checkers.PermissionException:
-            raise exceptions.ForbiddenError("You don't have permissions")
 
     def read_many(self, filters: dict, **kwargs):
         filters = self._apply_permission_filter(filters)
