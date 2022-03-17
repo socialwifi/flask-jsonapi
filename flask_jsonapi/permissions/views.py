@@ -1,17 +1,14 @@
 import abc
 import logging
 
-from flask_jsonapi import ResourceRepositoryDetailView
-from flask_jsonapi import ResourceRepositoryListView
-from flask_jsonapi import ResourceRepositoryViewSet
 from flask_jsonapi import descriptors
-
-from . import checkers
+from flask_jsonapi import resource_repository_views
+from flask_jsonapi.permissions import checkers
 
 logger = logging.getLogger(__name__)
 
 
-class ProtectedDetailView(ResourceRepositoryDetailView):
+class ProtectedDetailView(resource_repository_views.ResourceRepositoryDetailView):
     def __init__(self, permission_checker: checkers.PermissionChecker, **kwargs):
         super().__init__(**kwargs)
         self.permission_checker = permission_checker
@@ -32,7 +29,7 @@ class ProtectedDetailView(ResourceRepositoryDetailView):
         return super().update(id, data, **kwargs)
 
 
-class ProtectedListView(ResourceRepositoryListView, abc.ABC):
+class ProtectedListView(resource_repository_views.ResourceRepositoryListView, abc.ABC):
     def __init__(self, permission_checker: checkers.PermissionChecker, **kwargs):
         super().__init__(**kwargs)
         self.permission_checker = permission_checker
@@ -55,7 +52,7 @@ class ProtectedListView(ResourceRepositoryListView, abc.ABC):
         return super().create(data, **kwargs)
 
 
-class ProtectedViewSet(ResourceRepositoryViewSet):
+class ProtectedViewSet(resource_repository_views.ResourceRepositoryViewSet):
     detail_view_cls = ProtectedDetailView
     list_view_cls: ProtectedListView
     permission_checker: checkers.PermissionChecker = descriptors.NotImplementedProperty('permission_checker')
