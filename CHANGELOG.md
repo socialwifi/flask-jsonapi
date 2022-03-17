@@ -1,4 +1,4 @@
-1.2.1 (unreleased)
+1.3.0 (2022-03-17)
 ------------------
 
 - Add allowed_actions for ViewSet and View.
