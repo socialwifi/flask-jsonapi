@@ -1,3 +1,4 @@
+import functools
 import http
 import logging
 
@@ -181,3 +182,66 @@ class ResourceList(ResourceBase):
 
     def create(self, data, **kwargs):
         raise NotImplementedError
+
+
+class Actions:
+    create = 'create'
+    read = 'fetch'
+    read_many = 'fetch list'
+    update = 'update'
+    destroy = 'delete'
+
+
+def check_allowed_action(action: str):
+    def decorate(func):
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            if action not in self.allowed_actions:
+                raise exceptions.MethodNotAllowed('{} is not allowed for this resource'.format(action.capitalize()))
+            return func(self, *args, **kwargs)
+        return wrapper
+    return decorate
+
+
+class AllowedActionsResourceMixin:
+    allowed_actions = ()
+
+    def __init__(self, *, allowed_actions=None,  **kwargs):
+        super().__init__(**kwargs)
+        if allowed_actions:
+            self.allowed_actions = allowed_actions
+
+
+class AllowedActionsResourceDetailMixin(AllowedActionsResourceMixin):
+    @check_allowed_action(Actions.read)
+    def get(self, *args, **kwargs):
+        return super().get(*args, **kwargs)
+
+    @check_allowed_action(Actions.update)
+    def patch(self, *args, **kwargs):
+        return super().patch(*args, **kwargs)
+
+    @check_allowed_action(Actions.destroy)
+    def delete(self, *args, **kwargs):
+        return super().delete(*args, **kwargs)
+
+
+class AllowedActionsResourceListMixin(AllowedActionsResourceMixin):
+    @check_allowed_action(Actions.create)
+    def post(self, *args, **kwargs):
+        return super().post(*args, **kwargs)
+
+    @check_allowed_action(Actions.read_many)
+    def get(self, *args, **kwargs):
+        return super().get(*args, **kwargs)
+
+
+class AllowedActionsResourceViewSetMixin:
+    detail_view_cls: AllowedActionsResourceMixin
+    list_view_cls: AllowedActionsResourceMixin
+    allowed_actions = ()
+
+    def get_views_kwargs(self):
+        kwargs = super().get_views_kwargs()
+        kwargs['allowed_actions'] = self.allowed_actions
+        return kwargs

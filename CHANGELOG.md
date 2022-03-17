@@ -1,6 +1,7 @@
 1.2.1 (unreleased)
 ------------------
 
+- Add allowed_actions for ViewSet and View.
 - Allow overriding resource action methods in protected views.
 
 

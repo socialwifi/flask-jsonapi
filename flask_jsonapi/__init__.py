@@ -7,11 +7,17 @@ from .resource_repositories.repositories import ResourceRepository
 from .resource_repository_views import ResourceRepositoryDetailView
 from .resource_repository_views import ResourceRepositoryListView
 from .resource_repository_views import ResourceRepositoryViewSet
+from .resources import AllowedActionsResourceDetailMixin
+from .resources import AllowedActionsResourceListMixin
+from .resources import AllowedActionsResourceViewSetMixin
 from .resources import ResourceDetail
 from .resources import ResourceList
 
 __all__ = [
     exceptions,
+    AllowedActionsResourceDetailMixin,
+    AllowedActionsResourceListMixin,
+    AllowedActionsResourceViewSetMixin,
     Api,
     FilterField,
     FilterSchema,

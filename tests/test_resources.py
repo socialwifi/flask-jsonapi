@@ -1,61 +1,50 @@
 import collections
-import json
 
 from unittest import mock
 
 import marshmallow_jsonapi
-import pytest
 
 from marshmallow_jsonapi import fields
 
-from flask_jsonapi import api
 from flask_jsonapi import filters_schema
 from flask_jsonapi import resource_repository_views
 from flask_jsonapi import resources
 from flask_jsonapi.resource_repositories import repositories
 
-JSONAPI_HEADERS = {'content-type': 'application/vnd.api+json', 'accept': 'application/vnd.api+json'}
+
+class ExampleSchema(marshmallow_jsonapi.Schema):
+    id = fields.UUID(required=True)
+    body = fields.Str()
+
+    class Meta:
+        type_ = 'example'
+        self_view_many = 'example_list'
+        self_view = 'example_detail'
+        self_view_kwargs = {'example_id': '<id>'}
+        strict = True
 
 
-@pytest.fixture
-def example_schema():
-    class ExmapleSchema(marshmallow_jsonapi.Schema):
-        id = fields.UUID(required=True)
-        body = fields.Str()
-
-        class Meta:
-            type_ = 'example'
-            self_view_many = 'example_list'
-            self_view = 'example_detail'
-            self_view_kwargs = {'example_id': '<id>'}
-            strict = True
-    return ExmapleSchema
-
-
-@pytest.fixture
-def example_model():
+def resource_factory(id=None, body=None):
     ExampleModel = collections.namedtuple('ExampleModel', 'id body')
-    return ExampleModel
+    return ExampleModel(id=id, body=body)
 
 
-def test_integration_get_list(app, example_schema, example_model):
+def test_integration_get_list(api, jsonapi_client):
     class ExampleListView(resources.ResourceList):
-        schema = example_schema
+        schema = ExampleSchema
 
         def read_many(self, filters, sorting, pagination):
             return [
-                example_model(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a4', body='heheh'),
-                example_model(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a5', body='hihi'),
+                resource_factory(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a4', body='heheh'),
+                resource_factory(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a5', body='hihi'),
             ]
 
-    application_api = api.Api(app)
-    application_api.route(ExampleListView, 'example_list', '/examples/')
-    response = app.test_client().get(
-        '/examples/',
-        headers=JSONAPI_HEADERS
-    )
-    result = json.loads(response.data.decode())
+    api.route(ExampleListView, 'example_list', '/examples/')
+
+    response = jsonapi_client.get('/examples/')
+
     assert response.status_code == 200
+    result = response.get_json(force=True)
     assert result == {
         'data': [
             {
@@ -81,45 +70,42 @@ def test_integration_get_list(app, example_schema, example_model):
     }
 
 
-def test_sorting(app, example_schema):
+def test_sorting(api, jsonapi_client):
     class ExampleRepository(repositories.ResourceRepository):
         pass
 
     class ExampleListView(resource_repository_views.ResourceRepositoryViewSet):
-        schema = example_schema
+        schema = ExampleSchema
         repository = ExampleRepository
 
-    api.Api(app).repository(ExampleListView(), 'example', '/examples/')
+    api.repository(ExampleListView(), 'example', '/examples/')
     get_list_mock = mock.MagicMock()
+
     with mock.patch('flask_jsonapi.resource_repositories.repositories.ResourceRepository.get_list', get_list_mock):
-        app.test_client().get(
-            '/examples/?sort=body',
-            headers=JSONAPI_HEADERS
-        )
+        jsonapi_client.get('/examples/?sort=body')
+
     get_list_mock.assert_called_once_with({}, ('body',), {})
 
 
-def test_integration_get_list_with_pagination(app, example_schema, example_model):
+def test_integration_get_list_with_pagination(api, jsonapi_client):
     class ExampleListView(resources.ResourceList):
-        schema = example_schema
+        schema = ExampleSchema
 
         def read_many(self, filters, sorting, pagination):
             return [
-                example_model(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a4', body='heheh'),
-                example_model(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a5', body='hihi'),
+                resource_factory(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a4', body='heheh'),
+                resource_factory(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a5', body='hihi'),
             ]
 
         def get_count(self, filters):
             return 5
 
-    application_api = api.Api(app)
-    application_api.route(ExampleListView, 'example_list', '/examples/')
-    response = app.test_client().get(
-        '/examples/?page[size]=2&page[number]=1',
-        headers=JSONAPI_HEADERS
-    )
-    result = json.loads(response.data.decode())
+    api.route(ExampleListView, 'example_list', '/examples/')
+
+    response = jsonapi_client.get('/examples/?page[size]=2&page[number]=1')
+
     assert response.status_code == 200
+    result = response.get_json(force=True)
     assert result == {
         'data': [
             {
@@ -153,15 +139,16 @@ def test_integration_get_list_with_pagination(app, example_schema, example_model
     }
 
 
-def test_integration_bad_accept_header(app, example_schema, example_model):
+def test_integration_bad_accept_header(api, test_client):
     class ExampleListView(resources.ResourceList):
-        schema = example_schema
+        schema = ExampleSchema
 
-    application_api = api.Api(app)
-    application_api.route(ExampleListView, 'example_list', '/examples/')
-    response = app.test_client().get('/examples/', headers={'accept': 'text/html'})
+    api.route(ExampleListView, 'example_list', '/examples/')
+
+    response = test_client.get('/examples/', headers={'accept': 'text/html'})
+
     assert response.status_code == 406
-    assert json.loads(response.data.decode()) == {
+    assert response.get_json(force=True) == {
         'errors': [{
             'detail': 'Accept header must be application/vnd.api+json',
             'source': '',
@@ -174,15 +161,16 @@ def test_integration_bad_accept_header(app, example_schema, example_model):
     }
 
 
-def test_integration_bad_content_type_header(app, example_schema, example_model):
+def test_integration_bad_content_type_header(api, test_client):
     class ExampleListView(resources.ResourceList):
-        schema = example_schema
+        schema = ExampleSchema
 
-    application_api = api.Api(app)
-    application_api.route(ExampleListView, 'example_list', '/examples/')
-    response = app.test_client().post('/examples/', headers={'accept': 'application/vnd.api+json'})
+    api.route(ExampleListView, 'example_list', '/examples/')
+
+    response = test_client.post('/examples/', headers={'accept': 'application/vnd.api+json'})
+
     assert response.status_code == 415
-    assert json.loads(response.data.decode()) == {
+    assert response.get_json(force=True) == {
         'errors': [{
             'detail': 'Content-Type header must be application/vnd.api+json',
             'source': '',
@@ -195,7 +183,7 @@ def test_integration_bad_content_type_header(app, example_schema, example_model)
     }
 
 
-def test_integration_get_filtered_list(app, example_schema, example_model):
+def test_integration_get_filtered_list(api, jsonapi_client):
     class ExampleFiltersSchema(filters_schema.FilterSchema):
         basic = filters_schema.FilterField()
         listed = filters_schema.ListFilterField()
@@ -204,7 +192,7 @@ def test_integration_get_filtered_list(app, example_schema, example_model):
         skipped_filter = filters_schema.FilterField()
 
     class ExampleListView(resources.ResourceList):
-        schema = example_schema
+        schema = ExampleSchema
         filter_schema = ExampleFiltersSchema()
 
         applied_filters = {}
@@ -213,12 +201,12 @@ def test_integration_get_filtered_list(app, example_schema, example_model):
             self.applied_filters.update(filters)
             return []
 
-    application_api = api.Api(app)
-    application_api.route(ExampleListView, 'example_list', '/examples/')
-    response = app.test_client().get(
+    api.route(ExampleListView, 'example_list', '/examples/')
+
+    response = jsonapi_client.get(
         '/examples/?filter[basic]=text&filter[listed]=first,second&filter[dumb-name]=another&filter[integer]=3',
-        headers=JSONAPI_HEADERS
     )
+
     assert response.status_code == 200
     assert ExampleListView.applied_filters == {
         'basic': 'text',
@@ -228,9 +216,9 @@ def test_integration_get_filtered_list(app, example_schema, example_model):
     }
 
 
-def test_integration_pagination(app, example_schema):
+def test_integration_pagination(api, jsonapi_client):
     class ExampleListView(resources.ResourceList):
-        schema = example_schema
+        schema = ExampleSchema
 
         applied_pagination = {}
 
@@ -241,12 +229,10 @@ def test_integration_pagination(app, example_schema):
         def get_count(self, filters):
             return 0
 
-    application_api = api.Api(app)
-    application_api.route(ExampleListView, 'example_list', '/examples/')
-    response = app.test_client().get(
-        '/examples/?page[size]=100&page[number]=50',
-        headers=JSONAPI_HEADERS
-    )
+    api.route(ExampleListView, 'example_list', '/examples/')
+
+    response = jsonapi_client.get('/examples/?page[size]=100&page[number]=50')
+
     assert response.status_code == 200
     assert ExampleListView.applied_pagination == {
         'size': 100,
@@ -254,44 +240,43 @@ def test_integration_pagination(app, example_schema):
     }
 
 
-def test_integration_create_resource(app, example_schema, example_model):
+def test_integration_create_resource(api, jsonapi_client):
     class ExampleListView(resources.ResourceList):
-        schema = example_schema
+        schema = ExampleSchema
 
         def create(self, *args, **kwargs):
-            return example_model(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a4', body='Nice body.')
+            return resource_factory(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a4', body='Nice body.')
 
-    json_data = json.dumps({
+    api.route(ExampleListView, 'example_list', '/examples/')
+
+    response = jsonapi_client.post(
+        '/examples/',
+        json={
+            'data': {
+                'type': 'example',
+                'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a4',
+                'attributes': {
+                    'body': "Nice body.",
+                }
+            }
+        },
+    )
+
+    assert response.get_json(force=True) == {
         'data': {
             'type': 'example',
             'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a4',
             'attributes': {
-                'body': "Nice body.",
-            }
-        }
-    })
-    application_api = api.Api(app)
-    application_api.route(ExampleListView, 'example_list', '/examples/')
-    response = app.test_client().post(
-        '/examples/',
-        headers=JSONAPI_HEADERS,
-        data=json_data,
-    )
-    assert json.loads(response.data.decode()) == {
-        "data": {
-            "type": "example",
-            "id": "f60717a3-7dc2-4f1a-bdf4-f2804c3127a4",
-            "attributes": {
-                "body": "Nice body."
+                'body': 'Nice body.'
             }
         },
-        "jsonapi": {
-            "version": "1.0"
+        'jsonapi': {
+            'version': '1.0'
         }
     }
 
 
-def test_integration_create_resource_invalid_input(app, example_schema, example_model):
+def test_integration_create_resource_invalid_input(api, jsonapi_client):
     class TestSchema(marshmallow_jsonapi.Schema):
         id = fields.UUID()
         f1 = fields.Str(required=True)
@@ -305,25 +290,24 @@ def test_integration_create_resource_invalid_input(app, example_schema, example_
         schema = TestSchema
 
         def create(self, *args, **kwargs):
-            return example_model(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a4', body='Nice body.')
+            return resource_factory(id='f60717a3-7dc2-4f1a-bdf4-f2804c3127a4', body='Nice body.')
 
-    json_data = json.dumps({
-        'data': {
-            'type': 'test',
-        }
-    })
-    application_api = api.Api(app)
-    application_api.route(ExampleListView, 'example_list', '/examples/')
-    response = app.test_client().post(
+    api.route(ExampleListView, 'example_list', '/examples/')
+
+    response = jsonapi_client.post(
         '/examples/',
-        headers=JSONAPI_HEADERS,
-        data=json_data,
+        json={
+            'data': {
+                'type': 'test',
+            }
+        }
     )
-    result = json.loads(response.data.decode())
+
+    result = response.get_json(force=True)
     assert result == {
         'errors': mock.ANY,
-        "jsonapi": {
-            "version": "1.0"
+        'jsonapi': {
+            'version': '1.0'
         }
     }
     assert list(sorted(result['errors'], key=lambda x: x['source']['pointer'])) == [
@@ -337,21 +321,18 @@ def test_integration_create_resource_invalid_input(app, example_schema, example_
     ]
 
 
-def test_integration_get(app, example_schema, example_model):
-
+def test_integration_get(api, jsonapi_client):
     class ExampleDetailView(resources.ResourceDetail):
-        schema = example_schema
+        schema = ExampleSchema
 
         def read(self, id):
-            return example_model(id=id, body='Gwynbelidd')
+            return resource_factory(id=id, body='Gwynbelidd')
 
-    application_api = api.Api(app)
-    application_api.route(ExampleDetailView, 'example_detail', '/examples/<id>/')
-    response = app.test_client().get(
-        '/examples/f60717a3-7dc2-4f1a-bdf4-f2804c3127a4/',
-        headers=JSONAPI_HEADERS
-    )
-    result = json.loads(response.data.decode())
+    api.route(ExampleDetailView, 'example_detail', '/examples/<id>/')
+
+    response = jsonapi_client.get('/examples/f60717a3-7dc2-4f1a-bdf4-f2804c3127a4/')
+
+    result = response.get_json(force=True)
     assert response.status_code == 200
     assert result == {
         'data': {
@@ -367,107 +348,97 @@ def test_integration_get(app, example_schema, example_model):
     }
 
 
-def test_integration_delete(app, example_schema, example_model):
+def test_integration_delete(api, jsonapi_client):
 
     class ExampleDetailView(resources.ResourceDetail):
-        schema = example_schema
+        schema = ExampleSchema
         deleted_ids = []
 
         def destroy(self, id):
             self.deleted_ids.append(id)
 
-    application_api = api.Api(app)
-    application_api.route(ExampleDetailView, 'example_detail', '/examples/<id>/')
-    response = app.test_client().delete(
-        '/examples/f60717a3-7dc2-4f1a-bdf4-f2804c3127a4/',
-        headers=JSONAPI_HEADERS
-    )
+    api.route(ExampleDetailView, 'example_detail', '/examples/<id>/')
+
+    response = jsonapi_client.delete('/examples/f60717a3-7dc2-4f1a-bdf4-f2804c3127a4/')
+
     assert response.status_code == 204
     assert response.data == b''
     assert ExampleDetailView.deleted_ids == ['f60717a3-7dc2-4f1a-bdf4-f2804c3127a4']
 
 
-def test_integration_patch(app, example_schema, example_model):
-
+def test_integration_patch(api, jsonapi_client):
     class ExampleDetailView(resources.ResourceDetail):
-        schema = example_schema
+        schema = ExampleSchema
 
-        def update(self, id, data):
+        def update(self, id, data, **kwargs):
             data.pop('id')
-            return example_model(id=id, **data)
+            return resource_factory(id=id, **data)
 
-    json_data = json.dumps({
+    api.route(ExampleDetailView, 'example_list', '/examples/<id>/')
+
+    response = jsonapi_client.patch(
+        '/examples/f60717a3-7dc2-4f1a-bdf4-f2804c3127a4/',
+        json={
+            'data': {
+                'type': 'example',
+                'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a4',
+                'attributes': {
+                    'body': 'Nice body.',
+                }
+            }
+        }
+    )
+
+    assert response.get_json(force=True) == {
         'data': {
             'type': 'example',
             'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a4',
             'attributes': {
-                'body': "Nice body.",
-            }
-        }
-    })
-    application_api = api.Api(app)
-    application_api.route(ExampleDetailView, 'example_list', '/examples/<id>/')
-    response = app.test_client().patch(
-        '/examples/f60717a3-7dc2-4f1a-bdf4-f2804c3127a4/',
-        headers=JSONAPI_HEADERS,
-        data=json_data,
-    )
-    assert json.loads(response.data.decode()) == {
-        "data": {
-            "type": "example",
-            "id": "f60717a3-7dc2-4f1a-bdf4-f2804c3127a4",
-            "attributes": {
-                "body": "Nice body."
+                'body': 'Nice body.'
             }
         },
-        "jsonapi": {
-            "version": "1.0"
+        'jsonapi': {
+            'version': '1.0'
         }
     }
 
 
-def test_integration_patch_with_empty_response(app, example_schema, example_model):
-
+def test_integration_patch_with_empty_response(api, jsonapi_client):
     class ExampleDetailView(resources.ResourceDetail):
-        schema = example_schema
+        schema = ExampleSchema
 
-        def update(self, id, data):
+        def update(self, id, data, **kwargs):
             pass
 
-    json_data = json.dumps({
-        'data': {
-            'type': 'example',
-            'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a4',
-            'attributes': {
-                'body': "Nice body.",
+    api.route(ExampleDetailView, 'example_list', '/examples/<id>/')
+
+    response = jsonapi_client.patch(
+        '/examples/f60717a3-7dc2-4f1a-bdf4-f2804c3127a4/',
+        json={
+            'data': {
+                'type': 'example',
+                'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a4',
+                'attributes': {
+                    'body': 'Nice body.',
+                }
             }
         }
-    })
-    application_api = api.Api(app)
-    application_api.route(ExampleDetailView, 'example_list', '/examples/<id>/')
-    response = app.test_client().patch(
-        '/examples/f60717a3-7dc2-4f1a-bdf4-f2804c3127a4/',
-        headers=JSONAPI_HEADERS,
-        data=json_data,
     )
+
     assert response.status_code == 204
     assert response.data == b''
 
 
-def test_creating_view_with_dynamic_schema(app, example_schema, example_model):
+def test_creating_view_with_dynamic_schema(api, jsonapi_client):
     class ExampleDetailView(resources.ResourceDetail):
-
         def read(self, id):
-            return example_model(id=id, body='Gwynbelidd')
+            return resource_factory(id=id, body='Gwynbelidd')
 
-    application_api = api.Api(app)
-    application_api.route(ExampleDetailView, 'example_detail', '/examples/<id>/',
-                          view_kwargs={'schema': example_schema})
-    response = app.test_client().get(
-        '/examples/f60717a3-7dc2-4f1a-bdf4-f2804c3127a4/',
-        headers=JSONAPI_HEADERS
-    )
-    result = json.loads(response.data.decode())
+    api.route(ExampleDetailView, 'example_detail', '/examples/<id>/', view_kwargs={'schema': ExampleSchema})
+
+    response = jsonapi_client.get('/examples/f60717a3-7dc2-4f1a-bdf4-f2804c3127a4/')
+
+    result = response.get_json(force=True)
     assert result == {
         'data': {
             'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a4',
@@ -480,3 +451,180 @@ def test_creating_view_with_dynamic_schema(app, example_schema, example_model):
             'version': '1.0'
         }
     }
+
+
+class TestAllowedActions:
+    class ExampleDetailView(resources.AllowedActionsResourceDetailMixin, resources.ResourceDetail):
+        schema = ExampleSchema
+
+        def read(self, id):
+            return resource_factory(id=id, body='xyz')
+
+        def update(self, id, data, **kwargs):
+            data.pop('id')
+            return resource_factory(id=id, **data)
+
+        def destroy(self, id):
+            pass
+
+    class ExampleListView(resources.AllowedActionsResourceListMixin, resources.ResourceList):
+        schema = ExampleSchema
+
+        def read_many(self, *args, **kwargs):
+            return [
+                resource_factory(id='11111111-1111-1111-1111-111111111111', body='one'),
+                resource_factory(id='22222222-2222-2222-2222-222222222222', body='two'),
+            ]
+
+        def create(self, *args, **kwargs):
+            return resource_factory(**kwargs['data'])
+
+    def test_create_is_allowed(self, api, jsonapi_client):
+        api.route(self.ExampleListView, 'example', '/examples', view_kwargs={
+            'allowed_actions': (resources.Actions.create,)
+        })
+
+        response = jsonapi_client.post(
+            '/examples',
+            json={
+                'data': {
+                    'type': 'example',
+                    'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a4',
+                    'attributes': {
+                        'body': "Nice body.",
+                    }
+                }
+            },
+        )
+
+        assert response.status_code == 201
+
+    def test_create_is_not_allowed(self, api, jsonapi_client):
+        api.route(self.ExampleListView, 'example', '/examples')
+
+        response = jsonapi_client.post(
+            '/examples',
+            json={
+                'data': {
+                    'type': 'example',
+                    'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a4',
+                    'attributes': {
+                        'body': "Nice body.",
+                    }
+                }
+            },
+        )
+
+        assert response.status_code == 405
+        result = response.get_json(force=True)
+        assert len(result['errors']) == 1
+        error = result['errors'][0]
+        assert error['detail'] == 'Create is not allowed for this resource'
+
+    def test_get_list_is_allowed(self, api, jsonapi_client):
+        api.route(self.ExampleListView, 'example', '/examples', view_kwargs={
+            'allowed_actions': (resources.Actions.read_many,)
+        })
+
+        response = jsonapi_client.get('/examples')
+
+        assert response.status_code == 200
+        results = response.get_json(force=True)
+        assert len(results['data']) == 2
+
+    def test_get_list_is_not_allowed(self, api, jsonapi_client):
+        api.route(self.ExampleListView, 'example', '/examples')
+
+        response = jsonapi_client.get('/examples')
+
+        assert response.status_code == 405
+        result = response.get_json(force=True)
+        assert len(result['errors']) == 1
+        error = result['errors'][0]
+        assert error['detail'] == 'Fetch list is not allowed for this resource'
+
+    def test_get_is_allowed(self, api, jsonapi_client):
+        api.route(self.ExampleDetailView, 'example', '/examples/<id>', view_kwargs={
+            'allowed_actions': (resources.Actions.read,)
+        })
+
+        response = jsonapi_client.get('/examples/11111111-1111-1111-1111-111111111111')
+
+        assert response.status_code == 200
+        result = response.get_json(force=True)
+        assert result['data']['id'] == '11111111-1111-1111-1111-111111111111'
+
+    def test_get_is_not_allowed(self, api, jsonapi_client):
+        api.route(self.ExampleDetailView, 'example', '/examples/<id>')
+
+        response = jsonapi_client.get('/examples/11111111-1111-1111-1111-111111111111')
+
+        assert response.status_code == 405
+        result = response.get_json(force=True)
+        assert len(result['errors']) == 1
+        error = result['errors'][0]
+        assert error['detail'] == 'Fetch is not allowed for this resource'
+
+    def test_patch_is_allowed(self, api, jsonapi_client):
+        api.route(self.ExampleDetailView, 'example', '/examples/<id>', view_kwargs={
+            'allowed_actions': (resources.Actions.update,)
+        })
+
+        response = jsonapi_client.patch(
+            '/examples/11111111-1111-1111-1111-111111111111',
+            json={
+                'data': {
+                    'type': 'example',
+                    'id': '11111111-1111-1111-1111-111111111111',
+                    'attributes': {
+                        'body': 'two',
+                    }
+                }
+            }
+        )
+
+        assert response.status_code == 200
+        result = response.get_json(force=True)
+        assert result['data']['attributes']['body'] == 'two'
+
+    def test_patch_is_not_allowed(self, api, jsonapi_client):
+        api.route(self.ExampleDetailView, 'example', '/examples/<id>')
+
+        response = jsonapi_client.patch(
+            '/examples/11111111-1111-1111-1111-111111111111',
+            json={
+                'data': {
+                    'type': 'example',
+                    'id': '11111111-1111-1111-1111-111111111111',
+                    'attributes': {
+                        'body': 'two',
+                    }
+                }
+            }
+        )
+
+        assert response.status_code == 405
+        result = response.get_json(force=True)
+        assert len(result['errors']) == 1
+        error = result['errors'][0]
+        assert error['detail'] == 'Update is not allowed for this resource'
+
+    def test_delete_is_allowed(self, api, jsonapi_client):
+        api.route(self.ExampleDetailView, 'example', '/examples/<id>', view_kwargs={
+            'allowed_actions': (resources.Actions.destroy,)
+        })
+
+        response = jsonapi_client.delete('/examples/11111111-1111-1111-1111-111111111111')
+
+        assert response.status_code == 204
+
+    def test_delete_is_not_allowed(self, api, jsonapi_client):
+        api.route(self.ExampleDetailView, 'example', '/examples/<id>')
+
+        response = jsonapi_client.delete('/examples/11111111-1111-1111-1111-111111111111')
+
+        assert response.status_code == 405
+        result = response.get_json(force=True)
+        assert len(result['errors']) == 1
+        error = result['errors'][0]
+        assert error['detail'] == 'Delete is not allowed for this resource'
