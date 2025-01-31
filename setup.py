@@ -1,14 +1,10 @@
-import pathlib
-
-import pkg_resources
-
 from setuptools import find_packages
 from setuptools import setup
 
-with pathlib.Path('base_requirements.txt').open() as requirements_txt:
-    install_requires = [
-        str(requirement) for requirement in pkg_resources.parse_requirements(requirements_txt)
-    ]
+
+def parse_requirements(filename):
+    with open(filename) as requirements_file:
+        return requirements_file.readlines()
 
 
 def get_long_description():
@@ -26,9 +22,7 @@ setup(
     author_email='it@socialwifi.com',
     url='https://github.com/socialwifi/flask-jsonapi',
     packages=find_packages(exclude=['tests']),
-    install_requires=install_requires,
-    setup_requires=['pytest-runner'],
-    tests_require=['pytest'],
+    install_requires=parse_requirements('base_requirements.txt'),
     extras_require={
         'sqlalchemy': ['sqlalchemy', 'sqlalchemy_utils']
     },
@@ -41,8 +35,9 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
     ]
 )
