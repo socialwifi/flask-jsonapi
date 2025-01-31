@@ -1,6 +1,8 @@
 import pytest
 import sqlalchemy
 
+from sqlalchemy import orm
+
 from flask_jsonapi.resource_repositories import sqlalchemy_repositories
 
 Base = sqlalchemy.orm.declarative_base()
@@ -13,6 +15,15 @@ class User(Base):
     date_joined = sqlalchemy.Column(sqlalchemy.DateTime)
     email = sqlalchemy.Column(sqlalchemy.String)
     experience_level = sqlalchemy.Column(sqlalchemy.Integer)
+    address_id = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('address.id'))
+    address = orm.relationship("Address", back_populates="user")
+
+
+class Address(Base):
+    __tablename__ = 'address'
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    email = sqlalchemy.Column(sqlalchemy.String)
+    user = orm.relationship("User", back_populates="address")
 
 
 @pytest.fixture
@@ -92,3 +103,21 @@ class TestFilterMethods:
         user_repository.create({'name': 'Marcin Kopec', 'experience_level': 420})
         users = user_repository.get_list({'name__in': ['Mr. Bean', 'Marcin Kopec']})
         assert len(users) == 2
+
+    def test_if_exception_is_raised_for_unknown_column_in_filter(self, user_repository):
+        user_repository.create({'name': 'Mr. Bean'})
+        with pytest.raises(ValueError) as e:
+            user_repository.get_list(filters={'last_name': 'Doe'})
+        assert 'Could not find column for filter "last_name"' in str(e.value)
+
+    def test_if_exception_is_raised_for_unknown_related_column_in_filter(self, user_repository):
+        user_repository.create({'name': 'Mr. Bean'})
+        with pytest.raises(ValueError) as e:
+            user_repository.get_list(filters={'address__street': 'x@x.com'})
+        assert 'Could not find column for filter "address__street"' in str(e.value)
+
+    def test_if_exception_is_raised_for_unknown_operator_in_filter(self, user_repository):
+        user_repository.create({'name': 'Mr. Bean'})
+        with pytest.raises(ValueError) as e:
+            user_repository.get_list(filters={'name__exactly': 'Mr. Bean'})
+        assert "No idea what to do with 'exactly'" in str(e.value)
