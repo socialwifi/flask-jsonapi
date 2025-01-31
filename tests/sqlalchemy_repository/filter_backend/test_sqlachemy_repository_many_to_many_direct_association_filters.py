@@ -47,23 +47,25 @@ def user_repository(db_session):
 @pytest.mark.parametrize(argnames='setup_db_schema', argvalues=[Base], indirect=True)
 @pytest.mark.usefixtures('setup_db_schema')
 class TestManyToManyAssociation:
-    def test_basic(self, user_repository):
+    def test_basic(self, user_repository, db_session):
         stroustrup = user_repository.create({'name': 'Bjarne Stroustrup'})
         gosling = user_repository.create({'name': 'James Gosling'})
-        UserPostLike(user=stroustrup, post=Post(title='C++ rocks!'))
-        UserPostLike(user=gosling, post=Post(title='Java is the best!'))
+        db_session.add(UserPostLike(user=stroustrup, post=Post(title='C++ rocks!')))
+        db_session.add(UserPostLike(user=gosling, post=Post(title='Java is the best!')))
+        db_session.commit()
         filters = {'post_likes__post__title': 'C++ rocks!'}
         users = user_repository.get_list(filters=filters)
         assert len(users) == 1
         assert users[0].name == 'Bjarne Stroustrup'
 
-    def test_filter_by_association_attribute(self, user_repository):
+    def test_filter_by_association_attribute(self, user_repository, db_session):
         stroustrup = user_repository.create({'name': 'Bjarne Stroustrup'})
         gosling = user_repository.create({'name': 'James Gosling'})
         cpp_date = datetime.datetime.now()
         java_date = datetime.datetime.now() + datetime.timedelta(days=1)
-        UserPostLike(user=stroustrup, post=Post(title='C++ rocks!'), date=cpp_date)
-        UserPostLike(user=gosling, post=Post(title='Java is the best!'), date=java_date)
+        db_session.add(UserPostLike(user=stroustrup, post=Post(title='C++ rocks!'), date=cpp_date))
+        db_session.add(UserPostLike(user=gosling, post=Post(title='Java is the best!'), date=java_date))
+        db_session.commit()
         filters = {'post_likes__date': cpp_date}
         users = user_repository.get_list(filters=filters)
         assert len(users) == 1
