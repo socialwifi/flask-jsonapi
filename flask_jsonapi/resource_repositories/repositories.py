@@ -3,6 +3,7 @@ from contextlib import contextmanager
 from flask_jsonapi import exceptions
 
 
+# Deprecated
 class ResourceRepository:
     def create(self, data, **kwargs):
         raise exceptions.NotImplementedMethod('Creating is not implemented.')

@@ -8,6 +8,7 @@ from flask_jsonapi.permissions import checkers
 logger = logging.getLogger(__name__)
 
 
+# Deprecated
 class ProtectedDetailViewMixin:
     def __init__(self, permission_checker: checkers.PermissionChecker, **kwargs):
         super().__init__(**kwargs)
@@ -38,6 +39,7 @@ class ProtectedDetailViewMixin:
         return super().update(resource.id, data, **kwargs)
 
 
+# Deprecated
 class ProtectedListViewMixin(abc.ABC):
     def __init__(self, permission_checker: checkers.PermissionChecker, **kwargs):
         super().__init__(**kwargs)
@@ -67,14 +69,17 @@ class ProtectedListViewMixin(abc.ABC):
         return super().create(data, **kwargs)
 
 
+# Deprecated
 class ProtectedDetailView(ProtectedDetailViewMixin, resource_repository_views.ResourceRepositoryDetailView):
     pass
 
 
+# Deprecated
 class ProtectedListView(ProtectedListViewMixin, resource_repository_views.ResourceRepositoryListView):
     pass
 
 
+# Deprecated
 class ProtectedViewSet(resource_repository_views.ResourceRepositoryViewSet):
     detail_view_cls = ProtectedDetailView
     list_view_cls: ProtectedListView

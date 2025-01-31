@@ -4,22 +4,20 @@ from sqlalchemy import exc
 from sqlalchemy import func
 from sqlalchemy.orm import exc as orm_exc
 
-from flask_jsonapi import exceptions
-from flask_jsonapi.exceptions import ForbiddenError
-from flask_jsonapi.resource_repositories import repositories
 from flask_jsonapi.utils import sqlalchemy_django_query
+
+from . import base
+from . import exceptions
 
 logger = logging.getLogger(__name__)
 
 
-# Deprecated
-class SqlAlchemyModelRepository(repositories.ResourceRepository):
+class SqlAlchemyModelRepository(base.DataService):
     model = None
     session = None
-    instance_name = 'model instance'
     filter_methods_map = {}
 
-    def create(self, data, strategy='commit', **kwargs):
+    def create(self, data, strategy='commit'):
         obj = self.build(data)
         self.session.add(obj)
         try:
@@ -27,7 +25,7 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
             return obj
         except exc.SQLAlchemyError as error:
             logger.exception(error)
-            raise ForbiddenError(detail='{} could not be created.'.format(self.instance_name.capitalize()))
+            raise exceptions.DataServiceException(detail="Resource could not be created.")
 
     def get_list(self, filters=None, sorting=None, pagination=None):
         try:
@@ -38,17 +36,16 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
             return query.all()
         except exc.SQLAlchemyError as error:
             logger.exception(error)
-            raise ForbiddenError(detail='Error while getting {} list.'.format(self.instance_name))
+            raise exceptions.DataServiceException(detail="Error while getting resource list.")
 
     def get_detail(self, id):
         try:
             return self.get_query().filter(self.model.id == id).one()
         except orm_exc.NoResultFound:
-            raise exceptions.ObjectNotFound(source={'parameter': 'id'},
-                                            detail='{} {} not found.'.format(self.instance_name.capitalize(), id))
+            raise exceptions.ResourceNotFound("Resource {} not found.".format(id))
         except exc.SQLAlchemyError as error:
             logger.exception(error)
-            raise ForbiddenError(detail='Error while getting {} details.'.format(self.instance_name))
+            raise exceptions.DataServiceException("Error while getting resource details.")
 
     def delete(self, id, strategy='commit'):
         obj = self.get_detail(id)
@@ -57,11 +54,15 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
             self._run_session_strategy(strategy)
         except exc.SQLAlchemyError as error:
             logger.exception(error)
-            raise ForbiddenError(detail='Error while deleting {}.'.format(self.instance_name))
+            raise exceptions.DataServiceException(detail="Error while deleting resource.")
 
-    def update(self, data, strategy='commit', **kwargs):
-        id = data['id']
-        obj = self.get_detail(id)
+    def update(self, data, strategy='commit', id=None, resource=None):
+        if resource is not None:
+            obj = resource
+        else:
+            if id is None:
+                id = data['id']
+            obj = self.get_detail(id)
         for key, value in data.items():
             self.update_attribute(obj, key, value)
         try:
@@ -69,7 +70,7 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
             return obj
         except exc.SQLAlchemyError as error:
             logger.exception(error)
-            raise ForbiddenError(detail='Error while updating {}.'.format(self.instance_name))
+            raise exceptions.DataServiceException(detail="Error while updating resource.")
 
     def _run_session_strategy(self, strategy):
         if strategy == 'commit':
@@ -104,7 +105,7 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
         try:
             query = query.order_by(*sorting)
         except exc.InvalidRequestError:
-            raise exceptions.InvalidSort("Invalid sort fields for {}".format(self.instance_name))
+            raise exceptions.InvalidSortParameter("Invalid sort fields.")
         return query
 
     def build(self, kwargs):
@@ -118,3 +119,49 @@ class SqlAlchemyModelRepository(repositories.ResourceRepository):
         filtered_query = self.apply_filters(query, filters)
         count_query = filtered_query.statement.with_only_columns(func.count(self.model.id))
         return self.session.execute(count_query).scalar()
+
+    def get_or_create(self, *, create_data=None, for_update=False, strategy='commit', **kwargs):
+        query = self.session.query(self.model)
+        if for_update:
+            query = query.with_for_update()
+        try:
+            return query.filter_by(**kwargs).one()
+        except orm_exc.NoResultFound:
+            create_data = create_data or {}
+            build_data = kwargs.copy()
+            build_data.update(create_data)
+            try:
+                created = self.build(build_data)
+                with self.session.begin_nested():
+                    self.session.add(created)
+                self._run_session_strategy(strategy)
+                return created
+            except exc.IntegrityError as e:
+                if 'duplicate key value violates unique constraint' in str(e.orig):
+                    return query.filter_by(**kwargs).one()
+                else:
+                    raise
+
+    def update_or_create(self, *, update_data=None, strategy='commit', **kwargs):
+        update_data = update_data or {}
+        updated_rows = self.session.query(self.model).filter_by(**kwargs).update(
+            update_data, synchronize_session=False)
+        if updated_rows == 0:
+            create_data = {}
+            create_data.update(kwargs)
+            create_data.update(update_data)
+            try:
+                created = self.build(create_data)
+                with self.session.begin_nested():
+                    self.session.add(created)
+                self._run_session_strategy(strategy)
+                return created
+            except exc.IntegrityError as e:
+                if 'duplicate key value violates unique constraint' in str(e.orig):
+                    self.session.query(self.model).filter_by(**kwargs).update(
+                        update_data, synchronize_session=False)
+                    self._run_session_strategy(strategy)
+                else:
+                    raise
+        else:
+            self._run_session_strategy(strategy)

@@ -103,7 +103,7 @@ class ResourceDetail(ResourceBase):
     def read(self, id):
         raise NotImplementedError
 
-    def update(self, id, data, **kwargs):
+    def update(self, id, data):
         raise NotImplementedError
 
     def destroy(self, id):
@@ -180,7 +180,7 @@ class ResourceList(ResourceBase):
     def get_count(self, filters):
         raise NotImplementedError
 
-    def create(self, data, **kwargs):
+    def create(self, data):
         raise NotImplementedError
 
 
@@ -192,17 +192,20 @@ class Actions:
     destroy = 'delete'
 
 
+# Deprecated
 def check_allowed_action(action: str):
     def decorate(func):
         @functools.wraps(func)
         def wrapper(self, *args, **kwargs):
             if action not in self.allowed_actions:
-                raise exceptions.MethodNotAllowed('{} is not allowed for this resource'.format(action.capitalize()))
+                raise exceptions.MethodNotAllowed(
+                    detail='{} is not allowed for this resource'.format(action.capitalize()))
             return func(self, *args, **kwargs)
         return wrapper
     return decorate
 
 
+# Deprecated
 class AllowedActionsResourceMixin:
     allowed_actions = ()
 
@@ -212,6 +215,7 @@ class AllowedActionsResourceMixin:
             self.allowed_actions = allowed_actions
 
 
+# Deprecated
 class AllowedActionsResourceDetailMixin(AllowedActionsResourceMixin):
     @check_allowed_action(Actions.read)
     def get(self, *args, **kwargs):
@@ -226,6 +230,7 @@ class AllowedActionsResourceDetailMixin(AllowedActionsResourceMixin):
         return super().delete(*args, **kwargs)
 
 
+# Deprecated
 class AllowedActionsResourceListMixin(AllowedActionsResourceMixin):
     @check_allowed_action(Actions.create)
     def post(self, *args, **kwargs):
@@ -236,6 +241,7 @@ class AllowedActionsResourceListMixin(AllowedActionsResourceMixin):
         return super().get(*args, **kwargs)
 
 
+# Deprecated
 class AllowedActionsResourceViewSetMixin:
     detail_view_cls: AllowedActionsResourceMixin
     list_view_cls: AllowedActionsResourceMixin

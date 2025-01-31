@@ -2,25 +2,29 @@ class JsonApiException(Exception):
     title = 'Unknown error'
     status = 500
 
-    def __init__(self, source, detail, *args, title=None, status=None, **kwargs):
+    def __init__(self, *, status=None, title=None, detail=None, source=None):
         """Initialize a jsonapi exception
 
         :param dict source: the source of the error
         :param str detail: the detail of the error
         """
-        super().__init__(*args, **kwargs)
-        self.source = source
-        self.detail = detail
-        if title is not None:
-            self.title = title
         if status is not None:
             self.status = status
+        if title is not None:
+            self.title = title
+        self.detail = detail
+        self.source = source
 
     def to_dict(self):
-        return {'status': self.status,
-                'source': self.source,
-                'title': self.title,
-                'detail': self.detail}
+        result = {
+            'status': self.status,
+            'title': self.title,
+        }
+        if self.detail:
+            result['detail'] = self.detail
+        if self.source:
+            result['source'] = self.source
+        return result
 
 
 class BadRequest(JsonApiException):
@@ -100,14 +104,6 @@ class MethodNotAllowed(JsonApiException):
     title = "Method not allowed"
     status = 405
 
-    def __init__(self, detail, source=None, **kwargs):
-        source = source or {}
-        super().__init__(
-            source=source,
-            detail=detail,
-            **kwargs,
-        )
-
 
 class InvalidType(JsonApiException):
     title = "Invalid type"
@@ -118,21 +114,10 @@ class NotImplementedMethod(JsonApiException):
     title = "Method not implemented"
     status = 501
 
-    def __init__(self, detail, **kwargs):
-        super().__init__(
-            source=None,
-            detail=detail,
-            **kwargs
-        )
-
 
 class ForbiddenError(JsonApiException):
     title = 'Operation forbidden.'
     status = 403
-
-    def __init__(self, detail, source=None):
-        self.source = source or {}
-        self.detail = detail
 
 
 class AttributeValidationError(JsonApiException):

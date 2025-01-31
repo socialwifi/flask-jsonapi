@@ -4,6 +4,7 @@ from flask_jsonapi import resources
 from flask_jsonapi.resource_repositories import repositories
 
 
+# Deprecated
 class ResourceRepositoryViewMixin:
     repository = repositories.ResourceRepository()
 
@@ -13,6 +14,7 @@ class ResourceRepositoryViewMixin:
             self.repository = repository
 
 
+# Deprecated
 class ResourceRepositoryDetailView(ResourceRepositoryViewMixin, resources.ResourceDetail):
     def read(self, id):
         return self.repository.get_detail(id)
@@ -25,6 +27,7 @@ class ResourceRepositoryDetailView(ResourceRepositoryViewMixin, resources.Resour
         self.repository.update(data, **kwargs)
 
 
+# Deprecated
 class ResourceRepositoryListView(ResourceRepositoryViewMixin, resources.ResourceList):
     def read_many(self, filters, sorting, pagination):
         return self.repository.get_list(filters, sorting, pagination)
@@ -36,6 +39,7 @@ class ResourceRepositoryListView(ResourceRepositoryViewMixin, resources.Resource
         return self.repository.get_count(filters)
 
 
+# Deprecated
 class ResourceRepositoryViewSet:
     repository = repositories.ResourceRepository()
     schema = descriptors.NotImplementedProperty('schema')

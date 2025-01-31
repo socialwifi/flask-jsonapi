@@ -10,9 +10,6 @@ class PermissionException(exceptions.JsonApiException):
     status = http.HTTPStatus.FORBIDDEN.value
     title = http.HTTPStatus.FORBIDDEN.phrase
 
-    def __init__(self, source=None, detail=None, *args, title=None, status=None, **kwargs):
-        super().__init__(source, detail, *args, title=title, status=status, **kwargs)
-
 
 Resource = typing.TypeVar('Resource')
 
