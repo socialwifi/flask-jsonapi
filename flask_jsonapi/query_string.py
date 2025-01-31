@@ -5,7 +5,7 @@ import typing
 
 import flask
 
-from six.moves.urllib import parse
+from urllib import parse
 
 from flask_jsonapi import exceptions
 from flask_jsonapi import utils
