@@ -7,9 +7,9 @@ from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import Session
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import relationship
 
 from flask_jsonapi.utils.sqlalchemy_django_query import DjangoQuery
