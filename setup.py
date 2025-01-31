@@ -24,7 +24,7 @@ setup(
     packages=find_packages(exclude=['tests']),
     install_requires=parse_requirements('base_requirements.txt'),
     extras_require={
-        'sqlalchemy': ['sqlalchemy', 'sqlalchemy_utils']
+        'sqlalchemy': ['sqlalchemy>=2.0', 'sqlalchemy_utils']
     },
     license='BSD',
     classifiers=[
