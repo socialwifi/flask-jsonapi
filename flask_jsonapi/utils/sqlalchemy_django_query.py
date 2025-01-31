@@ -134,6 +134,7 @@ class DjangoQueryMixin(object):
         q = self
         negate_if = lambda expr: expr if not negate else ~expr
         column = None
+        filter_applied = False
         joins_needed = []
         for arg, value in kwargs.items():
             for token in arg.split('__'):
@@ -146,16 +147,22 @@ class DjangoQueryMixin(object):
                 elif token in self._underscore_operators:
                     op = self._underscore_operators[token]
                     q = q.filter(negate_if(op(column, *to_list(value))))
+                    filter_applied = True
                     column = None
                 elif token in self._underscore_list_operators:
                     op = self._underscore_list_operators[token]
                     q = q.filter(negate_if(op(column, to_list(value))))
+                    filter_applied = True
                     column = None
                 else:
                     raise ValueError('No idea what to do with %r' % token)
             if column is not None:
                 q = q.filter(negate_if(column == value))
+                filter_applied = True
                 column = None
+            if filter_applied is False:
+                raise ValueError('Could not find column for filter "{}"'.format(arg))
+            filter_applied = False
             q = q.reset_joinpoint()
         return q
 
