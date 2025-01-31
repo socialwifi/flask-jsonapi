@@ -23,6 +23,7 @@ from sqlalchemy import exc
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.base import _entity_descriptor
 from sqlalchemy.orm.query import Query
+from sqlalchemy.sql import annotation
 from sqlalchemy.sql import extract
 from sqlalchemy.sql import operators
 from sqlalchemy.util import to_list
@@ -231,6 +232,8 @@ def get_mapper(mixed):
         return mixed.mapper
     if isinstance(mixed, orm.sa.orm.attributes.InstrumentedAttribute):
         mixed = mixed.class_
+    if isinstance(mixed, annotation.AnnotatedJoin):
+        return mixed._annotations['parentmapper']
     if isinstance(mixed, orm.sa.Table):
         if hasattr(orm.mapperlib, '_all_registries'):
             all_mappers = set()
