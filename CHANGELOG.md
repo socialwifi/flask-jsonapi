@@ -1,7 +1,9 @@
 ## 1.4.2 (unreleased)
 ---------------------
 
-- Nothing changed yet.
+- Fix duplicated Content-Type header in JSON:API responses.
+- `BaseJsonApiResponse.base_header` was replaced by `content_type`. A Content-Type header supplied by the
+  caller is now overridden by the JSON:API one.
 
 
 ## 1.4.1 (2026-02-02)

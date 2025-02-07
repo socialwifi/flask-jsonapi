@@ -30,11 +30,11 @@ class EmptyResponse(BaseResponse):
 
 
 class BaseJsonApiResponse(BaseResponse):
-    base_header = {'Content-Type': 'application/vnd.api+json'}
+    content_type = 'application/vnd.api+json'
 
     def make_response(self):
         response = super().make_response()
-        response.headers.extend(self.base_header)
+        response.headers['Content-Type'] = self.content_type
         return response
 
     def get_content(self):
