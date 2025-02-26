@@ -144,8 +144,7 @@ class SqlAlchemyModelRepository(base.DataService):
 
     def update_or_create(self, *, update_data=None, strategy='commit', **kwargs):
         update_data = update_data or {}
-        updated_rows = self.session.query(self.model).filter_by(**kwargs).update(
-            update_data, synchronize_session=False)
+        updated_rows = self.session.query(self.model).filter_by(**kwargs).update(update_data)
         if updated_rows == 0:
             create_data = {}
             create_data.update(kwargs)
@@ -158,8 +157,7 @@ class SqlAlchemyModelRepository(base.DataService):
                 return created
             except exc.IntegrityError as e:
                 if 'duplicate key value violates unique constraint' in str(e.orig):
-                    self.session.query(self.model).filter_by(**kwargs).update(
-                        update_data, synchronize_session=False)
+                    self.session.query(self.model).filter_by(**kwargs).update(update_data)
                     self._run_session_strategy(strategy)
                 else:
                     raise
