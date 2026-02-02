@@ -1,7 +1,10 @@
-1.3.1 (unreleased)
+1.4.0 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Support filtering for models using inheritance.
+- Raise exceptions when filters are not matched.
+- Fix tests.
+- Remove "six" usage.
 
 
 1.3.0 (2022-03-17)
