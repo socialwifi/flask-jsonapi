@@ -1,31 +1,36 @@
-from flask_jsonapi import exceptions
-from flask_jsonapi import resources
-
+from .. import exceptions
 from . import base
 
 
-class CheckAllowedActions(base.Middleware):
+CREATE = 'create'
+READ = 'fetch'
+READ_MANY = 'fetch list'
+UPDATE = 'update'
+DESTROY = 'delete'
+
+
+class AllowedActions(base.Middleware):
     def __init__(self, allowed_actions: list[str]):
         self.allowed_actions = allowed_actions
 
     def create(self, *args, **kwargs):
-        self._check_allowed_action(resources.Actions.create)
+        self._check_allowed_action(CREATE)
         return super().create(*args, **kwargs)
 
     def read(self, *args, **kwargs):
-        self._check_allowed_action(resources.Actions.read)
+        self._check_allowed_action(READ)
         return super().read(*args, **kwargs)
 
     def read_many(self, *args, **kwargs):
-        self._check_allowed_action(resources.Actions.read_many)
+        self._check_allowed_action(READ_MANY)
         return super().read_many(*args, **kwargs)
 
     def update(self, *args, **kwargs):
-        self._check_allowed_action(resources.Actions.update)
+        self._check_allowed_action(UPDATE)
         return super().update(*args, **kwargs)
 
     def destroy(self, *args, **kwargs):
-        self._check_allowed_action(resources.Actions.destroy)
+        self._check_allowed_action(DESTROY)
         return super().destroy(*args, **kwargs)
 
     def _check_allowed_action(self, action):

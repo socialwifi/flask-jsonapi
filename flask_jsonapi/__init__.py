@@ -12,6 +12,10 @@ from .resources import AllowedActionsResourceListMixin
 from .resources import AllowedActionsResourceViewSetMixin
 from .resources import ResourceDetail
 from .resources import ResourceList
+from .views import DetailView
+from .views import ListView
+from .viewsets import ViewSet
+from .viewsets import ViewSet
 
 __all__ = [
     exceptions,
@@ -28,4 +32,7 @@ __all__ = [
     ResourceRepositoryViewSet,
     ResourceDetail,
     ResourceList,
+    DetailView,
+    ListView,
+    ViewSet,
 ]
