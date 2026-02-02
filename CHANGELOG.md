@@ -1,7 +1,7 @@
 ## 1.4.1 (unreleased)
 ---------------------
 
-- Nothing changed yet.
+- Lock marshmallow version below 4.0.
 
 
 ## 1.4.0 (2026-02-02)
