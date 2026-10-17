@@ -159,7 +159,7 @@ class ResourceDetail(ResourceBase):
         raise NotImplementedError
 
 
-class ResourceList(ResourceBase):
+class ListResourceBase(ResourceBase):
     methods = ['GET', 'POST']
     filter_schema = filters_schema.FilterSchema()
     pagination = query_string.SizeNumberPagination()
@@ -169,36 +169,20 @@ class ResourceList(ResourceBase):
         if filter_schema:
             self.filter_schema = filter_schema
 
-    def get(self, *args, **kwargs):
-        parsed_filters = self.filter_schema.parse()
-        parsed_sorting = self.sort_parser.parse()
-        parsed_pagination = self.pagination.parse()
-        objects_list = self.read_many(filters=parsed_filters,
-                                      sorting=parsed_sorting,
-                                      pagination=parsed_pagination)
+    def _parse_list_query(self):
+        return {
+            'filters': self.filter_schema.parse(),
+            'sorting': self.sort_parser.parse(),
+            'pagination': self.pagination.parse(),
+        }
+
+    def _dump_list(self, objects_list):
         include_fields = self.include_parser.parse()
         sparse_fields = self.sparse_fields_parser.parse()
         try:
-            objects = self.schema(
-                many=True, include_data=include_fields, only=sparse_fields).dump(objects_list)
+            return self.schema(many=True, include_data=include_fields, only=sparse_fields).dump(objects_list)
         except marshmallow.ValidationError as e:
             raise exceptions.JsonApiException(detail='marshmallow.ValidationError', source=e.messages)
-        else:
-            pagination_links = self.get_pagination_links(parsed_pagination, parsed_filters)
-            return response.JsonApiListResponse(
-                response_data=objects,
-                links=pagination_links,
-            )
-
-    def get_pagination_links(self, parsed_pagination, parsed_filters):
-        if parsed_pagination:
-            page_size = parsed_pagination['size']
-            current_page = parsed_pagination['number']
-            total_count = self.get_count(filters=parsed_filters)
-            pagination_links = self.pagination.get_links(page_size, current_page, total_count)
-        else:
-            pagination_links = {}
-        return pagination_links
 
     def post(self, *args, **kwargs):
         try:
@@ -217,20 +201,43 @@ class ResourceList(ResourceBase):
             status=http.HTTPStatus.CREATED,
         )
 
+    def create(self, data, **kwargs):
+        raise NotImplementedError
+
+
+class ResourceList(ListResourceBase):
+    def get(self, *args, **kwargs):
+        query = self._parse_list_query()
+        objects_list = self.read_many(**query)
+        objects = self._dump_list(objects_list)
+        pagination_links = self.get_pagination_links(query['pagination'], query['filters'])
+        return response.JsonApiListResponse(
+            response_data=objects,
+            links=pagination_links,
+        )
+
+    def get_pagination_links(self, parsed_pagination, parsed_filters):
+        if parsed_pagination:
+            page_size = parsed_pagination['size']
+            current_page = parsed_pagination['number']
+            total_count = self.get_count(filters=parsed_filters)
+            pagination_links = self.pagination.get_links(page_size, current_page, total_count)
+        else:
+            pagination_links = {}
+        return pagination_links
+
     def read_many(self, filters, sorting, pagination):
         raise NotImplementedError
 
     def get_count(self, filters):
         raise NotImplementedError
 
-    def create(self, data, **kwargs):
-        raise NotImplementedError
-
 
 class Actions:
     create = 'create'
     read = 'fetch'
-    read_many = 'fetch list'
+    list = 'fetch list'
+    read_many = list
     update = 'update'
     destroy = 'delete'
 
