@@ -11,6 +11,9 @@ from flask_jsonapi import views
 from flask_jsonapi.data_services import exceptions as ds_exceptions
 from flask_jsonapi.resources import Actions
 from tests.layers.conftest import ArticleSchema
+from tests.layers.conftest import RecordingGuard
+from tests.layers.conftest import RecordingMiddleware
+from tests.layers.conftest import RecordingObjectPermissions
 
 ALL = {Actions.create, Actions.read, Actions.list, Actions.update, Actions.destroy}
 NEW_ARTICLE_BODY = {'data': {'type': 'articles', 'attributes': {'title': 'brand new', 'owner': 'me'}}}
@@ -260,3 +263,25 @@ def test_missing_resource_from_data_service_is_404(register, jsonapi_client, art
     assert response.status_code == 404
     assert error_document(response)[0]['status'] == 404
     assert [name for name, kwargs in articles.calls] == []
+
+
+@pytest.mark.parametrize('url, data_service_call', [('/articles/', 'list'), ('/articles/1/', 'read')])
+def test_object_permissions_run_after_guards_and_before_every_middleware(
+        register, jsonapi_client, articles, url, data_service_call):
+    log = []
+    register(
+        guards=[RecordingGuard(log)],
+        object_permissions=RecordingObjectPermissions(log),
+        middlewares=[RecordingMiddleware(log, 'first middleware'), RecordingMiddleware(log, 'second middleware')],
+    )
+    assert jsonapi_client.get(url).status_code == 200
+    assert log == ['guard', 'object permissions', 'first middleware', 'second middleware']
+    assert [name for name, kwargs in articles.calls] == [data_service_call]
+
+
+@pytest.mark.parametrize('view_kwargs', [{}, {'object_permissions': None}])
+@pytest.mark.parametrize('view_class', [views.DetailView, views.ListView])
+def test_without_object_permissions_the_pipeline_has_no_extra_layer(articles, view_class, view_kwargs):
+    middleware = middlewares.Middleware()
+    view = view_class(schema=ArticleSchema, data_service=articles, middlewares=[middleware], **view_kwargs)
+    assert (view.pipeline.middleware, view.pipeline.inner) == (middleware, articles)

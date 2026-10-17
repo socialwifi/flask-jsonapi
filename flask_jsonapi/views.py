@@ -43,11 +43,13 @@ def _translating_data_service_errors(method):
 
 
 class LayeredViewMixin:
-    def __init__(self, *, data_service, allowed_actions=(), guards=(), middlewares=(), **kwargs):
+    def __init__(self, *, data_service, allowed_actions=(), guards=(), object_permissions=None, middlewares=(),
+                 **kwargs):
         super().__init__(**kwargs)
         self.allowed_actions = allowed_actions
         self.guards = guards
-        self.pipeline = build_pipeline(middlewares, data_service)
+        layers = middlewares if object_permissions is None else [object_permissions, *middlewares]
+        self.pipeline = build_pipeline(layers, data_service)
 
     def _authorize(self, action):
         if action not in self.allowed_actions:

@@ -11,6 +11,7 @@ class ViewSet:
     filter_schema = filters_schema.FilterSchema()
     allowed_actions = frozenset()
     guards = ()
+    object_permissions = None
     middlewares = ()
     view_decorators = ()
 
@@ -28,6 +29,7 @@ class ViewSet:
             'data_service': self.data_service,
             'allowed_actions': self.allowed_actions,
             'guards': self.guards,
+            'object_permissions': self.object_permissions,
             'middlewares': self.middlewares,
         }
 

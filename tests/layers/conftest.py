@@ -6,6 +6,9 @@ from marshmallow_jsonapi import Schema
 from marshmallow_jsonapi import fields
 
 from flask_jsonapi import data_services
+from flask_jsonapi import guards
+from flask_jsonapi import middlewares
+from flask_jsonapi import permissions
 from flask_jsonapi.data_services import exceptions as ds_exceptions
 
 
@@ -56,6 +59,53 @@ class InMemoryArticles(data_services.DataService):
     def destroy(self, *, resource):
         self.calls.append(('destroy', {'resource': resource}))
         del self.rows[resource.id]
+
+
+class RecordingGuard(guards.Guard):
+    def __init__(self, log):
+        self.log = log
+
+    def check(self, action):
+        self.log.append('guard')
+
+
+class RecordingMiddleware(middlewares.Middleware):
+    def __init__(self, log, name):
+        self.log = log
+        self.name = name
+
+    def read(self, *, id, inner):
+        self.log.append(self.name)
+        return inner.read(id=id)
+
+    def list(self, *, filters, sorting, pagination, inner):
+        self.log.append(self.name)
+        return inner.list(filters=filters, sorting=sorting, pagination=pagination)
+
+
+class RecordingObjectPermissions(permissions.ObjectPermissions):
+    def __init__(self, log):
+        self.log = log
+
+    def create(self, *, data, inner):
+        self.log.append('object permissions')
+        return inner.create(data=data)
+
+    def read(self, *, id, inner):
+        self.log.append('object permissions')
+        return inner.read(id=id)
+
+    def list(self, *, filters, sorting, pagination, inner):
+        self.log.append('object permissions')
+        return inner.list(filters=filters, sorting=sorting, pagination=pagination)
+
+    def update(self, *, resource, data, inner):
+        self.log.append('object permissions')
+        return inner.update(resource=resource, data=data)
+
+    def destroy(self, *, resource, inner):
+        self.log.append('object permissions')
+        return inner.destroy(resource=resource)
 
 
 @pytest.fixture

@@ -11,6 +11,8 @@ from flask_jsonapi import guards
 from flask_jsonapi import viewsets
 from flask_jsonapi.resources import Actions
 from tests.layers.conftest import ArticleSchema
+from tests.layers.conftest import RecordingGuard
+from tests.layers.conftest import RecordingObjectPermissions
 
 
 class DenyAll(guards.Guard):
@@ -62,6 +64,29 @@ def test_subclass_replaces_guards(api, jsonapi_client, articles):
     assert (public_status, internal_status) == (401, 200)
 
 
+def test_subclass_switches_off_guards_and_object_permissions(api, jsonapi_client, articles):
+    log = []
+
+    class Public(viewsets.ViewSet):
+        schema_class = ArticleSchema
+        data_service = articles
+        allowed_actions = {Actions.read, Actions.list}
+        guards = [RecordingGuard(log)]
+        object_permissions = RecordingObjectPermissions(log)
+
+    class Internal(Public):
+        guards = []
+        object_permissions = None
+
+    api.repository(Public(), 'public', '/public/')
+    api.repository(Internal(), 'internal', '/internal/')
+    public_statuses = [jsonapi_client.get(url).status_code for url in ['/public/', '/public/1/']]
+    assert (public_statuses, log) == ([200, 200], ['guard', 'object permissions'] * 2)
+    log.clear()
+    internal_statuses = [jsonapi_client.get(url).status_code for url in ['/internal/', '/internal/1/']]
+    assert (internal_statuses, log) == ([200, 200], [])
+
+
 def test_view_decorators_wrap_both_views(api, jsonapi_client, articles):
     wrapped = []
 
@@ -91,5 +116,5 @@ def test_public_api_exports_layered_classes():
 def test_new_api_imports_without_sqlalchemy():
     code = ("import sys; sys.modules['sqlalchemy'] = None; "
             "import flask_jsonapi, flask_jsonapi.viewsets, flask_jsonapi.views, flask_jsonapi.guards, "
-            "flask_jsonapi.middlewares, flask_jsonapi.data_services")
+            "flask_jsonapi.middlewares, flask_jsonapi.permissions, flask_jsonapi.data_services")
     subprocess.run([sys.executable, '-c', code], check=True)
