@@ -13,6 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 class SqlAlchemyModelRepository(repositories.ResourceRepository):
+    """Deprecated since 1.5.0, use flask_jsonapi.data_services.sqlalchemy_repositories.SqlAlchemyModelRepository."""
+
     model = None
     session = None
     instance_name = 'model instance'

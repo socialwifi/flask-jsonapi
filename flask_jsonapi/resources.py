@@ -243,6 +243,8 @@ class Actions:
 
 
 def check_allowed_action(action: str):
+    """Deprecated since 1.5.0, use the allowed_actions of flask_jsonapi.ViewSet."""
+
     def decorate(func):
         @functools.wraps(func)
         def wrapper(self, *args, **kwargs):
@@ -254,6 +256,8 @@ def check_allowed_action(action: str):
 
 
 class AllowedActionsResourceMixin:
+    """Deprecated since 1.5.0, use the allowed_actions of flask_jsonapi.ViewSet."""
+
     allowed_actions = ()
 
     def __init__(self, *, allowed_actions=None,  **kwargs):
@@ -263,6 +267,8 @@ class AllowedActionsResourceMixin:
 
 
 class AllowedActionsResourceDetailMixin(AllowedActionsResourceMixin):
+    """Deprecated since 1.5.0, use flask_jsonapi.DetailView."""
+
     @check_allowed_action(Actions.read)
     def get(self, *args, **kwargs):
         return super().get(*args, **kwargs)
@@ -277,6 +283,8 @@ class AllowedActionsResourceDetailMixin(AllowedActionsResourceMixin):
 
 
 class AllowedActionsResourceListMixin(AllowedActionsResourceMixin):
+    """Deprecated since 1.5.0, use flask_jsonapi.ListView."""
+
     @check_allowed_action(Actions.create)
     def post(self, *args, **kwargs):
         return super().post(*args, **kwargs)
@@ -287,6 +295,8 @@ class AllowedActionsResourceListMixin(AllowedActionsResourceMixin):
 
 
 class AllowedActionsResourceViewSetMixin:
+    """Deprecated since 1.5.0, use flask_jsonapi.ViewSet."""
+
     detail_view_cls: AllowedActionsResourceMixin
     list_view_cls: AllowedActionsResourceMixin
     allowed_actions = ()

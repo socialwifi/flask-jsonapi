@@ -9,6 +9,8 @@ logger = logging.getLogger(__name__)
 
 
 class ProtectedDetailViewMixin:
+    """Deprecated since 1.5.0, use flask_jsonapi.permissions.CheckObjectPermission with flask_jsonapi.DetailView."""
+
     def __init__(self, permission_checker: checkers.PermissionChecker, **kwargs):
         super().__init__(**kwargs)
         self.permission_checker = permission_checker
@@ -39,6 +41,8 @@ class ProtectedDetailViewMixin:
 
 
 class ProtectedListViewMixin(abc.ABC):
+    """Deprecated since 1.5.0, use flask_jsonapi.permissions.CheckObjectPermission with flask_jsonapi.ListView."""
+
     def __init__(self, permission_checker: checkers.PermissionChecker, **kwargs):
         super().__init__(**kwargs)
         self.permission_checker = permission_checker
@@ -68,14 +72,20 @@ class ProtectedListViewMixin(abc.ABC):
 
 
 class ProtectedDetailView(ProtectedDetailViewMixin, resource_repository_views.ResourceRepositoryDetailView):
+    """Deprecated since 1.5.0, use flask_jsonapi.DetailView with flask_jsonapi.permissions.CheckObjectPermission."""
+
     pass
 
 
 class ProtectedListView(ProtectedListViewMixin, resource_repository_views.ResourceRepositoryListView):
+    """Deprecated since 1.5.0, use flask_jsonapi.ListView with flask_jsonapi.permissions.CheckObjectPermission."""
+
     pass
 
 
 class ProtectedViewSet(resource_repository_views.ResourceRepositoryViewSet):
+    """Deprecated since 1.5.0, use flask_jsonapi.ViewSet with flask_jsonapi.permissions.CheckObjectPermission."""
+
     detail_view_cls = ProtectedDetailView
     list_view_cls: ProtectedListView
     permission_checker: checkers.PermissionChecker = descriptors.NotImplementedProperty('permission_checker')

@@ -35,7 +35,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from marshmallow_jsonapi import Schema, fields
 
 import flask_jsonapi
-from flask_jsonapi.resource_repositories import sqlalchemy_repositories
+from flask_jsonapi.data_services import sqlalchemy_repositories
 
 db_engine = sqlalchemy.create_engine('sqlite:///')
 session = scoped_session(sessionmaker(bind=db_engine))
@@ -51,7 +51,6 @@ Base.metadata.create_all(db_engine)
 
 class ArticleRepository(sqlalchemy_repositories.SqlAlchemyModelRepository):
     model = Article
-    instance_name = 'articles'
     session = session
 
 class ArticleSchema(Schema):
@@ -60,17 +59,32 @@ class ArticleSchema(Schema):
 
     class Meta:
         type_ = 'articles'
-        strict = True
 
-class ArticleRepositoryViewSet(flask_jsonapi.resource_repository_views.ResourceRepositoryViewSet):
-    schema = ArticleSchema
-    repository = ArticleRepository()
+class ArticleViewSet(flask_jsonapi.ViewSet):
+    schema_class = ArticleSchema
+    data_service = ArticleRepository()
+    allowed_actions = {
+        flask_jsonapi.Actions.create,
+        flask_jsonapi.Actions.read,
+        flask_jsonapi.Actions.list,
+        flask_jsonapi.Actions.update,
+        flask_jsonapi.Actions.destroy,
+    }
 
 app = flask.Flask(__name__)
 api = flask_jsonapi.Api(app)
-api.repository(ArticleRepositoryViewSet(), 'articles', '/articles/')
+api.repository(ArticleViewSet(), 'articles', '/articles/')
 app.run(host='127.0.0.1', port=5000)
 ```
+
+`allowed_actions` lists what the endpoint serves; a ViewSet that does not declare it serves nothing. A ViewSet can
+also declare `guards` (request checks such as authentication), `object_permissions` (row-level permissions, for
+example a `flask_jsonapi.permissions.CheckObjectPermission`) and `middlewares` around its `data_service`. The data
+service has one method per action: `create`, `read`, `list`, `update` and `destroy`. `list` returns a
+`flask_jsonapi.data_services.ListResult` with the items and, when the client asks for a page, their total.
+The [documentation](https://flask-jsonapi.readthedocs.io/) describes every layer, and the
+[guide](https://flask-jsonapi.readthedocs.io/en/latest/guide.html) shows how to add authentication, permissions and
+business logic, and builds a complete application.
 
 ### Usage
 

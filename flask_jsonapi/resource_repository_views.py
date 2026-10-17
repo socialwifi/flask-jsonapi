@@ -5,6 +5,8 @@ from flask_jsonapi.resource_repositories import repositories
 
 
 class ResourceRepositoryViewMixin:
+    """Deprecated since 1.5.0, use the views built by flask_jsonapi.ViewSet."""
+
     repository = repositories.ResourceRepository()
 
     def __init__(self, *, repository=None, **kwargs):
@@ -14,6 +16,8 @@ class ResourceRepositoryViewMixin:
 
 
 class ResourceRepositoryDetailView(ResourceRepositoryViewMixin, resources.ResourceDetail):
+    """Deprecated since 1.5.0, use flask_jsonapi.DetailView."""
+
     def read(self, id):
         return self.repository.get_detail(id)
 
@@ -26,6 +30,8 @@ class ResourceRepositoryDetailView(ResourceRepositoryViewMixin, resources.Resour
 
 
 class ResourceRepositoryListView(ResourceRepositoryViewMixin, resources.ResourceList):
+    """Deprecated since 1.5.0, use flask_jsonapi.ListView."""
+
     def read_many(self, filters, sorting, pagination):
         return self.repository.get_list(filters, sorting, pagination)
 
@@ -37,6 +43,8 @@ class ResourceRepositoryListView(ResourceRepositoryViewMixin, resources.Resource
 
 
 class ResourceRepositoryViewSet:
+    """Deprecated since 1.5.0, use flask_jsonapi.ViewSet."""
+
     repository = repositories.ResourceRepository()
     schema = descriptors.NotImplementedProperty('schema')
     filter_schema = filters_schema.FilterSchema()

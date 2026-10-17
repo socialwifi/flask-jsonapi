@@ -33,8 +33,11 @@ Flask-jsonapi implements the following parts of the JSON API specification:
 * **sparse fieldsets** [`specification <http://jsonapi.org/format/#fetching-sparse-fieldsets>`__]
 * **links** [`specification <http://jsonapi.org/format/#document-links>`__] - resolved by marshmallow-jsonapi (`docs <https://marshmallow-jsonapi.readthedocs.io/en/latest/quickstart.html#flask-integration>`__)
 * **error objects** [`specification <http://jsonapi.org/format/#errors>`__]
-* **resource-level permissions** - view-level decorators support in ViewSets
-* **object-level permissions** - interfaces added in [`#43 <https://github.com/socialwifi/flask-jsonapi/pull/43>`__]
+* **allowed actions** - a ViewSet declares which actions it serves, see :doc:`view_sets`
+* **resource-level permissions** - guards run before the request body is parsed, see :doc:`layers`
+* **business logic** - middlewares wrap the data service, see :doc:`layers`
+* **object-level permissions** - the ``object_permissions`` of a ViewSet check every call to the data service,
+  see :doc:`layers`
 
 Not implemented yet:
 
@@ -46,13 +49,15 @@ Architecture
 
 Flow through layers beginning with an HTTP Request and ending with an HTTP Response::
 
-                                                   Schema
-                                                     🡙
-    [HTTP Request] -> [Flask Routing] -> ViewSet -> View -> Repository -> (         )
-                                                                          ( Storage )
-                                 [HTTP Response] <- View <- Repository <- (         )
-                                                     🡙
-                                                   Schema
+    [HTTP Request] -> [Flask Routing] -> View -> Allowed actions -> Guards
+        -> Object permissions -> Middlewares -> Data service -> Storage
+
+    [HTTP Response] <- View <- Object permissions <- Middlewares <- Data service <- Storage
+
+The View parses the request and dumps the response with the Schema.
+
+Every layer is described in :doc:`layers`. ``ResourceRepositoryViewSet`` and ``ProtectedViewSet`` are deprecated
+since 1.5.0, see :doc:`migration`.
 
 Installation
 ------------
@@ -83,7 +88,7 @@ Configuration
     from marshmallow_jsonapi import Schema, fields
 
     import flask_jsonapi
-    from flask_jsonapi.resource_repositories import sqlalchemy_repositories
+    from flask_jsonapi.data_services import sqlalchemy_repositories
 
     db_engine = sqlalchemy.create_engine('sqlite:///')
     session = scoped_session(sessionmaker(bind=db_engine))
@@ -99,7 +104,6 @@ Configuration
 
     class ArticleRepository(sqlalchemy_repositories.SqlAlchemyModelRepository):
         model = Article
-        instance_name = 'articles'
         session = session
 
     class ArticleSchema(Schema):
@@ -108,16 +112,25 @@ Configuration
 
         class Meta:
             type_ = 'articles'
-            strict = True
 
-    class ArticleRepositoryViewSet(flask_jsonapi.resource_repository_views.ResourceRepositoryViewSet):
-        schema = ArticleSchema
-        repository = ArticleRepository()
+    class ArticleViewSet(flask_jsonapi.ViewSet):
+        schema_class = ArticleSchema
+        data_service = ArticleRepository()
+        allowed_actions = {
+            flask_jsonapi.Actions.create,
+            flask_jsonapi.Actions.read,
+            flask_jsonapi.Actions.list,
+            flask_jsonapi.Actions.update,
+            flask_jsonapi.Actions.destroy,
+        }
 
     app = flask.Flask(__name__)
     api = flask_jsonapi.Api(app)
-    api.repository(ArticleRepositoryViewSet(), 'articles', '/articles/')
+    api.repository(ArticleViewSet(), 'articles', '/articles/')
     app.run(host='127.0.0.1', port=5000)
+
+``allowed_actions`` lists what the endpoint serves; a ViewSet that does not declare it serves nothing.
+Guards, object permissions, middlewares and data services are described in :doc:`layers`.
 
 Usage
 ~~~~~
@@ -186,9 +199,12 @@ Table of Contents
    :maxdepth: 3
 
    Overview<self>
+   guide
    tutorial
    view_sets
    views
+   layers
+   migration
    repositories
    including_relationships
    sparse_fieldsets

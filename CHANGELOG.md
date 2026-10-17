@@ -1,3 +1,52 @@
+## 1.5.0 (unreleased)
+---------------------
+
+- Add `flask_jsonapi.ViewSet`, `DetailView` and `ListView`: a layered way to declare a resource. A ViewSet declares
+  `allowed_actions`, `guards`, `object_permissions`, `middlewares` and one `data_service`, which run in a fixed
+  order: allowed actions and guards before the request body is parsed, then object permissions, middlewares and
+  the data service. `flask_jsonapi.guards` and `flask_jsonapi.middlewares` (`Middleware`, `build_pipeline`,
+  `CheckRequiredListFilters`) are new.
+- Add `flask_jsonapi.permissions.ObjectPermissions` and `CheckObjectPermission` for the `object_permissions` slot.
+  `CheckObjectPermission` plugs an existing `PermissionChecker` into a ViewSet. Its `apply_permission_filter`
+  returns filters that restrict a list to the objects the client may list, and may raise `PermissionException`
+  (403) when the client's own filters ask for objects it may not list. `check_list_permission` runs on the listed
+  objects as a safety net: if it drops any, a warning is logged and the total is left out of the response.
+- Add `flask_jsonapi.data_services`: HTTP-agnostic data services that raise their own exceptions
+  (`ResourceNotFound`, `PermissionDenied`, `InvalidData`, `Conflict`, ...), which a view translates to JSON:API
+  errors. Data services, middlewares and object permissions name their methods after the actions: `create`,
+  `read`, `list`, `update` and `destroy`. It includes a new `SqlAlchemyModelRepository` and
+  `LegacyRepositoryAdapter`, which lets a new ViewSet use a legacy repository (`PATCH` then answers 200 with a body
+  instead of 204).
+- Add `flask_jsonapi.data_services.ListResult(items, total)`, which `list` returns: the items, and the number of
+  objects matching the filters before pagination, or `None`. A data service sets the total when the request asks
+  for a page. `ListView` calls `list` once per request and builds the pagination links from the total. Without a
+  total, `last` is `null` and `next` is present only for a full page. `SqlAlchemyModelRepository.list` counts and
+  slices one filtered query. `LegacyRepositoryAdapter.list` calls `get_count` only when the request asks for a page.
+- Add `flask_jsonapi.resources.ListResourceBase`, the base class of `ResourceList` and `ListView`, and
+  `SizeNumberPagination.get_links_without_total`. A custom pagination class used by `ListView` must implement
+  `get_links` and `get_links_without_total`.
+- Add `Actions.list`. `Actions.read_many` stays as an alias with the same value.
+- Deprecate `ResourceRepositoryViewSet`, `ResourceRepositoryDetailView`, `ResourceRepositoryListView`,
+  `ProtectedViewSet`, `ProtectedDetailView`, `ProtectedListView`, the `AllowedActions*` mixins, `ResourceRepository`
+  and the legacy `SqlAlchemyModelRepository` (documented only, there are no runtime warnings). See the migration guide.
+- Every error from a view is now a JSON:API error document, for legacy views too. Unexpected exceptions are logged and
+  rendered as a generic 500 without internal details, and `flask.abort()` keeps its status, title and headers (for
+  example `WWW-Authenticate`). An `abort()` carrying an explicit response returns that response unchanged.
+- Flask app error handlers (`@app.errorhandler`) no longer run for exceptions raised inside flask-jsonapi views:
+  those become JSON:API errors, unexpected ones a generic 500. In testing mode such exceptions no longer reach the
+  test client either.
+- Errors while dumping a GET response (`AttributeError`, `KeyError`, `ValueError` from a schema) are a generic 500
+  without details instead of a 500 whose `detail` is the exception message.
+- `HEAD` is served by the `GET` handler instead of failing with a 500.
+- `PATCH` with a wrong resource `type` answers 409 Conflict instead of 500.
+- JSON:API exception classes accept keyword arguments (`status`, `title`, `detail`, `source`). The old positional
+  forms still work. New exceptions: `Unauthorized`, `UnprocessableEntity` and `ServiceUnavailable`.
+- `str(exc)` of a JSON:API exception is now its `detail`. Without a `source` argument, `ForbiddenError(...).source`
+  and `MethodNotAllowed(...).source` are now `None` instead of `{}`; `to_dict()` is unaffected.
+- Empty `detail` and `source` are omitted from error objects. Tests that compare a whole error body to one with
+  `'source': {}` need updating.
+
+
 ## 1.4.2 (unreleased)
 ---------------------
 
