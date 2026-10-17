@@ -9,6 +9,7 @@ from .exceptions import InvalidSortParameter
 from .exceptions import PermissionDenied
 from .exceptions import ResourceNotFound
 from .exceptions import Unavailable
+from .legacy import LegacyRepositoryAdapter
 
 __all__ = [
     'Conflict',
@@ -17,6 +18,7 @@ __all__ = [
     'InvalidData',
     'InvalidFilterParameter',
     'InvalidSortParameter',
+    'LegacyRepositoryAdapter',
     'ListResult',
     'PermissionDenied',
     'ResourceNotFound',
