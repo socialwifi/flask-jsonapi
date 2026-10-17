@@ -3,8 +3,8 @@ import http
 import logging
 
 import marshmallow
+import werkzeug.exceptions
 
-from flask import helpers
 from flask import request
 from flask import views
 from marshmallow_jsonapi import exceptions as marshmallow_jsonapi_exceptions
@@ -39,23 +39,54 @@ class ResourceBase(views.View):
     def dispatch_request(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
-        handler = getattr(self, request.method.lower(), self._http_method_not_allowed)
+        handler = self._handler_for(request.method)
         try:
-            response_object = handler(request, *args, **kwargs)
+            return handler(request, *args, **kwargs).make_response()
         except exceptions.JsonApiException as e:
             return response.JsonApiErrorResponse(
                 e.to_dict(),
                 status=e.status
             ).make_response()
-        else:
-            return response_object.make_response()
+        except werkzeug.exceptions.HTTPException as e:
+            if e.response is not None:
+                return e.response
+            if e.code is None:
+                return self._internal_server_error_response()
+            return response.JsonApiErrorResponse(
+                {'status': e.code, 'title': e.name},
+                headers=self._forwarded_headers(e),
+                status=e.code
+            ).make_response()
+        except Exception:
+            logger.exception('Unhandled exception in %s %s', request.method, request.path)
+            return self._internal_server_error_response()
+
+    def _handler_for(self, method):
+        handler = getattr(self, method.lower(), None)
+        if handler is None and method == 'HEAD':
+            handler = getattr(self, 'get', None)
+        return handler or self._http_method_not_allowed
+
+    @staticmethod
+    def _forwarded_headers(http_exception):
+        return [
+            (name, value) for name, value in http_exception.get_headers()
+            if name.lower() not in ('content-type', 'content-length')
+        ]
+
+    @staticmethod
+    def _internal_server_error_response():
+        return response.JsonApiErrorResponse(
+            {'status': http.HTTPStatus.INTERNAL_SERVER_ERROR.value, 'title': 'Internal server error'},
+            status=http.HTTPStatus.INTERNAL_SERVER_ERROR
+        ).make_response()
 
     def _http_method_not_allowed(self, request, *args, **kwargs):
         logger.error(
             'Method Not Allowed (%s): %s', request.method, request.path,
             extra={'status_code': http.HTTPStatus.METHOD_NOT_ALLOWED, 'request': request}
         )
-        return helpers.make_response('Method Not Allowed.', http.HTTPStatus.METHOD_NOT_ALLOWED)
+        raise exceptions.MethodNotAllowed()
 
 
 class ResourceDetail(ResourceBase):
@@ -70,12 +101,6 @@ class ResourceDetail(ResourceBase):
             data = self.schema(include_data=include_fields, only=sparse_fields).dump(resource)
         except marshmallow.ValidationError as e:
             raise exceptions.JsonApiException(detail='marshmallow.ValidationError', source=e.messages)
-        except (AttributeError, KeyError, ValueError) as e:
-            logger.error(
-                'Error Processing Request',
-                extra={'status_code': http.HTTPStatus.BAD_REQUEST, 'request': request, 'exception': e}
-            )
-            raise exceptions.JsonApiException(detail=str(e), source={'component': 'schema'})
         else:
             return response.JsonApiResponse(data)
 
@@ -88,6 +113,8 @@ class ResourceDetail(ResourceBase):
         computed_schema = self.schema(partial=True)
         try:
             data = computed_schema.load(request.get_json())
+        except marshmallow_jsonapi_exceptions.IncorrectTypeError as e:
+            return response.JsonApiErrorResponse.from_marshmallow_errors(e.messages, status=http.HTTPStatus.CONFLICT)
         except marshmallow.ValidationError as e:
             return response.JsonApiErrorResponse.from_marshmallow_errors(e.messages)
         else:
@@ -156,12 +183,6 @@ class ResourceList(ResourceBase):
                 many=True, include_data=include_fields, only=sparse_fields).dump(objects_list)
         except marshmallow.ValidationError as e:
             raise exceptions.JsonApiException(detail='marshmallow.ValidationError', source=e.messages)
-        except (AttributeError, KeyError, ValueError) as e:
-            logger.error(
-                'Error Processing Request',
-                extra={'status_code': http.HTTPStatus.BAD_REQUEST, 'request': request, 'exception': e}
-            )
-            raise exceptions.JsonApiException(detail=str(e), source={'component': 'schema'})
         else:
             pagination_links = self.get_pagination_links(parsed_pagination, parsed_filters)
             return response.JsonApiListResponse(

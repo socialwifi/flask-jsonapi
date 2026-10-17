@@ -116,8 +116,7 @@ def test_bad_get_list(app):
         headers=JSONAPI_HEADERS,
     )
     result = json.loads(response.data.decode('utf-8'))
-    assert result['errors'][0]['status'] == 500
-    assert result['errors'][0]['detail'] == 'Must have an `id` field'
+    assert result['errors'] == [{'status': 500, 'title': 'Internal server error'}]
 
 
 def test_bad_get_detail(app):
@@ -129,8 +128,7 @@ def test_bad_get_detail(app):
         headers=JSONAPI_HEADERS,
     )
     result = json.loads(response.data.decode('utf-8'))
-    assert result['errors'][0]['status'] == 500
-    assert result['errors'][0]['detail'] == 'Must have an `id` field'
+    assert result['errors'] == [{'status': 500, 'title': 'Internal server error'}]
 
 
 def test_bad_data_get_list(app):
@@ -144,8 +142,7 @@ def test_bad_data_get_list(app):
         headers=JSONAPI_HEADERS,
     )
     result = json.loads(response.data.decode('utf-8'))
-    assert result['errors'][0]['status'] == 500
-    assert result['errors'][0]['detail'] == "'int' object has no attribute 'isoformat'"
+    assert result['errors'] == [{'status': 500, 'title': 'Internal server error'}]
 
 
 def test_bad_data_get_detail(app):
@@ -159,8 +156,7 @@ def test_bad_data_get_detail(app):
         headers=JSONAPI_HEADERS,
     )
     result = json.loads(response.data.decode('utf-8'))
-    assert result['errors'][0]['status'] == 500
-    assert result['errors'][0]['detail'] == "'int' object has no attribute 'isoformat'"
+    assert result['errors'] == [{'status': 500, 'title': 'Internal server error'}]
 
 
 def test_create_with_missing_data(app):
