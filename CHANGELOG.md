@@ -1,7 +1,12 @@
 ## 1.4.2 (unreleased)
 ---------------------
 
-- Nothing changed yet.
+- Fix duplicated Content-Type header in JSON:API responses.
+- `BaseJsonApiResponse.base_header` was replaced by `content_type`. A Content-Type header supplied by the
+  caller is now overridden by the JSON:API one.
+- Return 409 Conflict when a PATCH body id does not match the URL. This also applies to a body id that
+  differs from the URL id only in letter case (for example an uppercase UUID): legacy repository views
+  used to overwrite the body id with the URL id and succeed, so clients sending such ids now get 409.
 
 
 ## 1.4.1 (2026-02-02)

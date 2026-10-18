@@ -30,3 +30,9 @@ def test_jsonapi_error_response(app):
                 }
             ]
         }
+
+
+def test_jsonapi_response_has_single_content_type_header(app):
+    with app.test_request_context('/'):
+        flask_response = response.JsonApiResponse({'data': None}).make_response()
+    assert flask_response.headers.getlist('Content-Type') == ['application/vnd.api+json']

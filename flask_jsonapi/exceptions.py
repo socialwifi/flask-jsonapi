@@ -126,6 +126,11 @@ class NotImplementedMethod(JsonApiException):
         )
 
 
+class Conflict(JsonApiException):
+    title = 'Conflict'
+    status = 409
+
+
 class ForbiddenError(JsonApiException):
     title = 'Operation forbidden.'
     status = 403

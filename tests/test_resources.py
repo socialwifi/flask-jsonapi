@@ -628,3 +628,91 @@ class TestAllowedActions:
         assert len(result['errors']) == 1
         error = result['errors'][0]
         assert error['detail'] == 'Delete is not allowed for this resource'
+
+
+class TestPatchIdCheck:
+    url = '/examples/f60717a3-7dc2-4f1a-bdf4-f2804c3127a4/'
+
+    def make_view(self, api, update):
+        class ExampleDetailView(resources.ResourceDetail):
+            schema = ExampleSchema
+
+            def update(self, id, data):
+                return update(id, data)
+
+        api.route(ExampleDetailView, 'example_detail', '/examples/<id>/')
+
+    def test_mismatched_id_is_rejected_before_update(self, api, jsonapi_client):
+        update = mock.Mock()
+        self.make_view(api, update)
+
+        response = jsonapi_client.patch(self.url, json={'data': {
+            'type': 'example', 'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a5', 'attributes': {'body': 'x'}}})
+
+        assert response.status_code == 409
+        assert response.get_json(force=True)['errors'] == [{
+            'status': 409,
+            'title': 'Conflict',
+            'detail': 'Resource id in the request body does not match the URL.',
+            'source': {'pointer': '/data/id'},
+        }]
+        assert not update.called
+
+    def test_missing_body_id_is_accepted(self, api, jsonapi_client):
+        update = mock.Mock(return_value=None)
+        self.make_view(api, update)
+
+        response = jsonapi_client.patch(self.url, json={'data': {'type': 'example', 'attributes': {'body': 'x'}}})
+
+        assert response.status_code == 204
+        assert update.called
+
+    def test_mismatched_attributes_id_without_body_id_is_rejected(self, api, jsonapi_client):
+        update = mock.Mock()
+        self.make_view(api, update)
+
+        response = jsonapi_client.patch(self.url, json={'data': {
+            'type': 'example', 'attributes': {'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a5', 'body': 'x'}}})
+
+        assert response.status_code == 409
+        assert not update.called
+
+    def test_mismatched_attributes_id_with_matching_body_id_is_rejected(self, api, jsonapi_client):
+        update = mock.Mock()
+        self.make_view(api, update)
+
+        response = jsonapi_client.patch(self.url, json={'data': {
+            'type': 'example',
+            'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a4',
+            'attributes': {'id': 'f60717a3-7dc2-4f1a-bdf4-f2804c3127a5', 'body': 'x'}}})
+
+        assert response.status_code == 409
+        assert not update.called
+
+    def test_numeric_body_id_matching_url_is_accepted(self, api, jsonapi_client):
+        class IntSchema(marshmallow_jsonapi.Schema):
+            id = fields.Int()
+            body = fields.Str()
+
+            class Meta:
+                type_ = 'example'
+
+        class ExampleDetailView(resources.ResourceDetail):
+            schema = IntSchema
+
+            def update(self, id, data):
+                return None
+
+        api.route(ExampleDetailView, 'example_detail', '/examples/<id>/')
+
+        response = jsonapi_client.patch('/examples/1/', json={'data': {
+            'type': 'example', 'id': 1, 'attributes': {'body': 'x'}}})
+
+        assert response.status_code == 204
+
+    def test_body_without_data_member_does_not_crash(self, api, jsonapi_client):
+        self.make_view(api, mock.Mock())
+
+        response = jsonapi_client.patch(self.url, json={'nodata': True})
+
+        assert response.status_code == 422

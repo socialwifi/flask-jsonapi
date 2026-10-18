@@ -84,17 +84,39 @@ class ResourceDetail(ResourceBase):
         return response.EmptyResponse()
 
     def patch(self, *args, **kwargs):
+        self._check_body_id()
         computed_schema = self.schema(partial=True)
         try:
             data = computed_schema.load(request.get_json())
         except marshmallow.ValidationError as e:
             return response.JsonApiErrorResponse.from_marshmallow_errors(e.messages)
         else:
+            self._check_loaded_id(data)
             resource = self.update(self.resource_id, data)
             if resource:
                 return response.JsonApiResponse(computed_schema.dump(resource))
             else:
                 return response.EmptyResponse()
+
+    def _check_body_id(self):
+        body = request.get_json(silent=True)
+        if not isinstance(body, dict) or not isinstance(body.get('data'), dict):
+            return
+        body_id = body['data'].get('id')
+        if body_id is not None and str(body_id) != str(self.resource_id):
+            raise self._id_conflict()
+
+    def _check_loaded_id(self, data):
+        # marshmallow-jsonapi lets an "id" attribute overwrite data.id in the loaded payload.
+        if 'id' in data and str(data['id']) != str(self.resource_id):
+            raise self._id_conflict()
+
+    @staticmethod
+    def _id_conflict():
+        return exceptions.Conflict(
+            source={'pointer': '/data/id'},
+            detail='Resource id in the request body does not match the URL.',
+        )
 
     @property
     def resource_id(self):
