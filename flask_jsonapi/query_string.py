@@ -20,6 +20,9 @@ class Pagination(QueryStringParser):
     def get_links(self, *args, **kwargs):
         raise NotImplementedError
 
+    def get_links_without_total(self, *args, **kwargs):
+        raise NotImplementedError
+
 
 class SizeNumberPagination(Pagination):
     def parse(self):
@@ -43,6 +46,11 @@ class SizeNumberPagination(Pagination):
         next_page = current_page + 1 if current_page < last_page else None
         return self._format_links(current_page, previous_page, next_page, last_page)
 
+    def get_links_without_total(self, page_size, current_page, item_count):
+        previous_page = current_page - 1 if current_page > 1 else None
+        next_page = current_page + 1 if item_count == page_size else None
+        return self._format_links(current_page, previous_page, next_page, last_page=None)
+
     def _format_links(self, current_page, previous_page, next_page, last_page):
         request_args = flask.request.args.copy()
         request_args.pop('page[number]')
@@ -53,7 +61,7 @@ class SizeNumberPagination(Pagination):
             'first': format_query_string.format(1),
             'previous': format_query_string.format(previous_page) if previous_page else None,
             'next': format_query_string.format(next_page) if next_page else None,
-            'last': format_query_string.format(last_page),
+            'last': format_query_string.format(last_page) if last_page is not None else None,
         }
 
     @staticmethod

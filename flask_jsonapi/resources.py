@@ -3,8 +3,8 @@ import http
 import logging
 
 import marshmallow
+import werkzeug.exceptions
 
-from flask import helpers
 from flask import request
 from flask import views
 from marshmallow_jsonapi import exceptions as marshmallow_jsonapi_exceptions
@@ -39,23 +39,54 @@ class ResourceBase(views.View):
     def dispatch_request(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
-        handler = getattr(self, request.method.lower(), self._http_method_not_allowed)
+        handler = self._handler_for(request.method)
         try:
-            response_object = handler(request, *args, **kwargs)
+            return handler(request, *args, **kwargs).make_response()
         except exceptions.JsonApiException as e:
             return response.JsonApiErrorResponse(
                 e.to_dict(),
                 status=e.status
             ).make_response()
-        else:
-            return response_object.make_response()
+        except werkzeug.exceptions.HTTPException as e:
+            if e.response is not None:
+                return e.response
+            if e.code is None:
+                return self._internal_server_error_response()
+            return response.JsonApiErrorResponse(
+                {'status': e.code, 'title': e.name},
+                headers=self._forwarded_headers(e),
+                status=e.code
+            ).make_response()
+        except Exception:
+            logger.exception('Unhandled exception in %s %s', request.method, request.path)
+            return self._internal_server_error_response()
+
+    def _handler_for(self, method):
+        handler = getattr(self, method.lower(), None)
+        if handler is None and method == 'HEAD':
+            handler = getattr(self, 'get', None)
+        return handler or self._http_method_not_allowed
+
+    @staticmethod
+    def _forwarded_headers(http_exception):
+        return [
+            (name, value) for name, value in http_exception.get_headers()
+            if name.lower() not in ('content-type', 'content-length')
+        ]
+
+    @staticmethod
+    def _internal_server_error_response():
+        return response.JsonApiErrorResponse(
+            {'status': http.HTTPStatus.INTERNAL_SERVER_ERROR.value, 'title': 'Internal server error'},
+            status=http.HTTPStatus.INTERNAL_SERVER_ERROR
+        ).make_response()
 
     def _http_method_not_allowed(self, request, *args, **kwargs):
         logger.error(
             'Method Not Allowed (%s): %s', request.method, request.path,
             extra={'status_code': http.HTTPStatus.METHOD_NOT_ALLOWED, 'request': request}
         )
-        return helpers.make_response('Method Not Allowed.', http.HTTPStatus.METHOD_NOT_ALLOWED)
+        raise exceptions.MethodNotAllowed()
 
 
 class ResourceDetail(ResourceBase):
@@ -70,12 +101,6 @@ class ResourceDetail(ResourceBase):
             data = self.schema(include_data=include_fields, only=sparse_fields).dump(resource)
         except marshmallow.ValidationError as e:
             raise exceptions.JsonApiException(detail='marshmallow.ValidationError', source=e.messages)
-        except (AttributeError, KeyError, ValueError) as e:
-            logger.error(
-                'Error Processing Request',
-                extra={'status_code': http.HTTPStatus.BAD_REQUEST, 'request': request, 'exception': e}
-            )
-            raise exceptions.JsonApiException(detail=str(e), source={'component': 'schema'})
         else:
             return response.JsonApiResponse(data)
 
@@ -88,6 +113,8 @@ class ResourceDetail(ResourceBase):
         computed_schema = self.schema(partial=True)
         try:
             data = computed_schema.load(request.get_json())
+        except marshmallow_jsonapi_exceptions.IncorrectTypeError as e:
+            return response.JsonApiErrorResponse.from_marshmallow_errors(e.messages, status=http.HTTPStatus.CONFLICT)
         except marshmallow.ValidationError as e:
             return response.JsonApiErrorResponse.from_marshmallow_errors(e.messages)
         else:
@@ -132,7 +159,7 @@ class ResourceDetail(ResourceBase):
         raise NotImplementedError
 
 
-class ResourceList(ResourceBase):
+class ListResourceBase(ResourceBase):
     methods = ['GET', 'POST']
     filter_schema = filters_schema.FilterSchema()
     pagination = query_string.SizeNumberPagination()
@@ -142,42 +169,20 @@ class ResourceList(ResourceBase):
         if filter_schema:
             self.filter_schema = filter_schema
 
-    def get(self, *args, **kwargs):
-        parsed_filters = self.filter_schema.parse()
-        parsed_sorting = self.sort_parser.parse()
-        parsed_pagination = self.pagination.parse()
-        objects_list = self.read_many(filters=parsed_filters,
-                                      sorting=parsed_sorting,
-                                      pagination=parsed_pagination)
+    def _parse_list_query(self):
+        return {
+            'filters': self.filter_schema.parse(),
+            'sorting': self.sort_parser.parse(),
+            'pagination': self.pagination.parse(),
+        }
+
+    def _dump_list(self, objects_list):
         include_fields = self.include_parser.parse()
         sparse_fields = self.sparse_fields_parser.parse()
         try:
-            objects = self.schema(
-                many=True, include_data=include_fields, only=sparse_fields).dump(objects_list)
+            return self.schema(many=True, include_data=include_fields, only=sparse_fields).dump(objects_list)
         except marshmallow.ValidationError as e:
             raise exceptions.JsonApiException(detail='marshmallow.ValidationError', source=e.messages)
-        except (AttributeError, KeyError, ValueError) as e:
-            logger.error(
-                'Error Processing Request',
-                extra={'status_code': http.HTTPStatus.BAD_REQUEST, 'request': request, 'exception': e}
-            )
-            raise exceptions.JsonApiException(detail=str(e), source={'component': 'schema'})
-        else:
-            pagination_links = self.get_pagination_links(parsed_pagination, parsed_filters)
-            return response.JsonApiListResponse(
-                response_data=objects,
-                links=pagination_links,
-            )
-
-    def get_pagination_links(self, parsed_pagination, parsed_filters):
-        if parsed_pagination:
-            page_size = parsed_pagination['size']
-            current_page = parsed_pagination['number']
-            total_count = self.get_count(filters=parsed_filters)
-            pagination_links = self.pagination.get_links(page_size, current_page, total_count)
-        else:
-            pagination_links = {}
-        return pagination_links
 
     def post(self, *args, **kwargs):
         try:
@@ -196,25 +201,50 @@ class ResourceList(ResourceBase):
             status=http.HTTPStatus.CREATED,
         )
 
+    def create(self, data, **kwargs):
+        raise NotImplementedError
+
+
+class ResourceList(ListResourceBase):
+    def get(self, *args, **kwargs):
+        query = self._parse_list_query()
+        objects_list = self.read_many(**query)
+        objects = self._dump_list(objects_list)
+        pagination_links = self.get_pagination_links(query['pagination'], query['filters'])
+        return response.JsonApiListResponse(
+            response_data=objects,
+            links=pagination_links,
+        )
+
+    def get_pagination_links(self, parsed_pagination, parsed_filters):
+        if parsed_pagination:
+            page_size = parsed_pagination['size']
+            current_page = parsed_pagination['number']
+            total_count = self.get_count(filters=parsed_filters)
+            pagination_links = self.pagination.get_links(page_size, current_page, total_count)
+        else:
+            pagination_links = {}
+        return pagination_links
+
     def read_many(self, filters, sorting, pagination):
         raise NotImplementedError
 
     def get_count(self, filters):
         raise NotImplementedError
 
-    def create(self, data, **kwargs):
-        raise NotImplementedError
-
 
 class Actions:
     create = 'create'
     read = 'fetch'
-    read_many = 'fetch list'
+    list = 'fetch list'
+    read_many = list
     update = 'update'
     destroy = 'delete'
 
 
 def check_allowed_action(action: str):
+    """Deprecated since 1.5.0, use the allowed_actions of flask_jsonapi.ViewSet."""
+
     def decorate(func):
         @functools.wraps(func)
         def wrapper(self, *args, **kwargs):
@@ -226,6 +256,8 @@ def check_allowed_action(action: str):
 
 
 class AllowedActionsResourceMixin:
+    """Deprecated since 1.5.0, use the allowed_actions of flask_jsonapi.ViewSet."""
+
     allowed_actions = ()
 
     def __init__(self, *, allowed_actions=None,  **kwargs):
@@ -235,6 +267,8 @@ class AllowedActionsResourceMixin:
 
 
 class AllowedActionsResourceDetailMixin(AllowedActionsResourceMixin):
+    """Deprecated since 1.5.0, use flask_jsonapi.DetailView."""
+
     @check_allowed_action(Actions.read)
     def get(self, *args, **kwargs):
         return super().get(*args, **kwargs)
@@ -249,6 +283,8 @@ class AllowedActionsResourceDetailMixin(AllowedActionsResourceMixin):
 
 
 class AllowedActionsResourceListMixin(AllowedActionsResourceMixin):
+    """Deprecated since 1.5.0, use flask_jsonapi.ListView."""
+
     @check_allowed_action(Actions.create)
     def post(self, *args, **kwargs):
         return super().post(*args, **kwargs)
@@ -259,6 +295,8 @@ class AllowedActionsResourceListMixin(AllowedActionsResourceMixin):
 
 
 class AllowedActionsResourceViewSetMixin:
+    """Deprecated since 1.5.0, use flask_jsonapi.ViewSet."""
+
     detail_view_cls: AllowedActionsResourceMixin
     list_view_cls: AllowedActionsResourceMixin
     allowed_actions = ()

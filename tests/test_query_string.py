@@ -104,6 +104,32 @@ class TestSizeNumberPagination:
                 'last': 'http://localhost/prefix/examples/?page[size]=10&page[number]=5'
             }
 
+    def test_links_of_empty_list_keep_last_page_zero(self, app):
+        with app.test_request_context('/examples/?page[size]=10&page[number]=1'):
+            links = query_string.SizeNumberPagination().get_links(page_size=10, current_page=1, total_count=0)
+            assert links['last'] == 'http://localhost/examples/?page[size]=10&page[number]=0'
+
+    @pytest.mark.parametrize('current_page, item_count, expected_previous, expected_next', [
+        (1, 10, None, 2),
+        (1, 9, None, None),
+        (3, 10, 2, 4),
+        (3, 0, 2, None),
+    ])
+    def test_links_without_total(self, app, current_page, item_count, expected_previous, expected_next):
+        def page(number):
+            return 'http://localhost/examples/?page[size]=10&page[number]={}'.format(number)
+
+        with app.test_request_context('/examples/?page[size]=10&page[number]=1'):
+            links = query_string.SizeNumberPagination().get_links_without_total(
+                page_size=10, current_page=current_page, item_count=item_count)
+            assert links == {
+                'self': page(current_page),
+                'first': page(1),
+                'previous': page(expected_previous) if expected_previous else None,
+                'next': page(expected_next) if expected_next else None,
+                'last': None,
+            }
+
 
 class TestSortParser:
     def test_sorting(self, app, sort_parser):

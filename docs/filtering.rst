@@ -7,7 +7,8 @@ Flask-jsonapi supports resource filtering.
 
 **Note:**
 
-All results of examples are ``filters`` parameter passed to ``read_many`` method of ``ResourceList`` or ``get_list`` method of ``ResourceRepositoryViewSet``.
+All results of examples are the ``filters`` parameter passed to the ``list`` method of a data
+service, to ``read_many`` of ``ResourceList`` or to ``get_list`` of a legacy repository.
 
 
 Simple Usage

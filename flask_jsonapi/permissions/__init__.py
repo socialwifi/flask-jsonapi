@@ -6,20 +6,24 @@ from .actions import UPDATE_ACTION
 from .checkers import ObjectLevelPermissionChecker
 from .checkers import PermissionChecker
 from .checkers import PermissionException
+from .object_permissions import CheckObjectPermission
+from .object_permissions import ObjectPermissions
 from .views import ProtectedDetailView
 from .views import ProtectedListView
 from .views import ProtectedViewSet
 
 __all__ = [
-    CREATE_ACTION,
-    READ_ACTION,
-    UPDATE_ACTION,
-    DESTROY_ACTION,
-    LIST_ACTION,
-    PermissionChecker,
-    ObjectLevelPermissionChecker,
-    PermissionException,
-    ProtectedDetailView,
-    ProtectedListView,
-    ProtectedViewSet,
+    'CREATE_ACTION',
+    'READ_ACTION',
+    'UPDATE_ACTION',
+    'DESTROY_ACTION',
+    'LIST_ACTION',
+    'PermissionChecker',
+    'ObjectLevelPermissionChecker',
+    'PermissionException',
+    'ObjectPermissions',
+    'CheckObjectPermission',
+    'ProtectedDetailView',
+    'ProtectedListView',
+    'ProtectedViewSet',
 ]

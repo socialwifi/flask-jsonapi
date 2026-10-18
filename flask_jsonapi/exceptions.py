@@ -2,13 +2,21 @@ class JsonApiException(Exception):
     title = 'Unknown error'
     status = 500
 
-    def __init__(self, source, detail, *args, title=None, status=None, **kwargs):
+    def __init__(self, *args, status=None, title=None, detail=None, source=None):
         """Initialize a jsonapi exception
 
-        :param dict source: the source of the error
+        Positional arguments are ``source, detail`` and any further ones go to ``Exception``, as in 1.4.
+
+        :param int status: the HTTP status, overrides the class default
+        :param str title: the title of the error, overrides the class default
         :param str detail: the detail of the error
+        :param dict source: the source of the error
         """
-        super().__init__(*args, **kwargs)
+        if args:
+            source = args[0]
+        if len(args) >= 2:
+            detail = args[1]
+        super().__init__(*([detail] if detail else []), *args[2:])
         self.source = source
         self.detail = detail
         if title is not None:
@@ -16,11 +24,18 @@ class JsonApiException(Exception):
         if status is not None:
             self.status = status
 
+    def __str__(self):
+        # 1.4 subclasses may skip super().__init__() and never set detail.
+        detail = getattr(self, 'detail', None)
+        return str(detail) if detail else super().__str__()
+
     def to_dict(self):
-        return {'status': self.status,
-                'source': self.source,
-                'title': self.title,
-                'detail': self.detail}
+        result = {'status': self.status, 'title': self.title}
+        if self.detail:
+            result['detail'] = self.detail
+        if self.source:
+            result['source'] = self.source
+        return result
 
 
 class BadRequest(JsonApiException):
@@ -100,13 +115,8 @@ class MethodNotAllowed(JsonApiException):
     title = "Method not allowed"
     status = 405
 
-    def __init__(self, detail, source=None, **kwargs):
-        source = source or {}
-        super().__init__(
-            source=source,
-            detail=detail,
-            **kwargs,
-        )
+    def __init__(self, detail=None, source=None, **kwargs):
+        super().__init__(source=source, detail=detail, **kwargs)
 
 
 class InvalidType(JsonApiException):
@@ -118,12 +128,8 @@ class NotImplementedMethod(JsonApiException):
     title = "Method not implemented"
     status = 501
 
-    def __init__(self, detail, **kwargs):
-        super().__init__(
-            source=None,
-            detail=detail,
-            **kwargs
-        )
+    def __init__(self, detail=None, source=None, **kwargs):
+        super().__init__(source=source, detail=detail, **kwargs)
 
 
 class Conflict(JsonApiException):
@@ -131,13 +137,27 @@ class Conflict(JsonApiException):
     status = 409
 
 
+class Unauthorized(JsonApiException):
+    title = 'Unauthorized'
+    status = 401
+
+
+class UnprocessableEntity(JsonApiException):
+    title = 'Unprocessable entity'
+    status = 422
+
+
+class ServiceUnavailable(JsonApiException):
+    title = 'Service unavailable'
+    status = 503
+
+
 class ForbiddenError(JsonApiException):
     title = 'Operation forbidden.'
     status = 403
 
-    def __init__(self, detail, source=None):
-        self.source = source or {}
-        self.detail = detail
+    def __init__(self, detail=None, source=None, **kwargs):
+        super().__init__(source=source, detail=detail, **kwargs)
 
 
 class AttributeValidationError(JsonApiException):

@@ -4,6 +4,8 @@ from flask_jsonapi import exceptions
 
 
 class ResourceRepository:
+    """Deprecated since 1.5.0, use flask_jsonapi.data_services.DataService."""
+
     def create(self, data, **kwargs):
         raise exceptions.NotImplementedMethod('Creating is not implemented.')
 
