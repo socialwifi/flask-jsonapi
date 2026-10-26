@@ -70,7 +70,7 @@ class ResourceDetail(ResourceBase):
             data = self.schema(include_data=include_fields, only=sparse_fields).dump(resource)
         except marshmallow.ValidationError as e:
             raise exceptions.JsonApiException(detail='marshmallow.ValidationError', source=e.messages)
-        except (AttributeError, KeyError, ValueError) as e:
+        except (AttributeError, KeyError, TypeError, ValueError) as e:
             logger.error(
                 'Error Processing Request',
                 extra={'status_code': http.HTTPStatus.BAD_REQUEST, 'request': request, 'exception': e}
@@ -134,7 +134,7 @@ class ResourceList(ResourceBase):
                 many=True, include_data=include_fields, only=sparse_fields).dump(objects_list)
         except marshmallow.ValidationError as e:
             raise exceptions.JsonApiException(detail='marshmallow.ValidationError', source=e.messages)
-        except (AttributeError, KeyError, ValueError) as e:
+        except (AttributeError, KeyError, TypeError, ValueError) as e:
             logger.error(
                 'Error Processing Request',
                 extra={'status_code': http.HTTPStatus.BAD_REQUEST, 'request': request, 'exception': e}

@@ -145,7 +145,7 @@ def test_bad_data_get_list(app):
     )
     result = json.loads(response.data.decode('utf-8'))
     assert result['errors'][0]['status'] == 500
-    assert result['errors'][0]['detail'] == "'int' object has no attribute 'isoformat'"
+    assert 'isoformat' in result['errors'][0]['detail']
 
 
 def test_bad_data_get_detail(app):
@@ -160,7 +160,7 @@ def test_bad_data_get_detail(app):
     )
     result = json.loads(response.data.decode('utf-8'))
     assert result['errors'][0]['status'] == 500
-    assert result['errors'][0]['detail'] == "'int' object has no attribute 'isoformat'"
+    assert 'isoformat' in result['errors'][0]['detail']
 
 
 def test_create_with_missing_data(app):

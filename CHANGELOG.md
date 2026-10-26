@@ -1,7 +1,8 @@
-## 1.4.2 (unreleased)
+## 1.5.0 (unreleased)
 ---------------------
 
-- Nothing changed yet.
+- Support marshmallow 4.0 and switch to marshmallow-jsonapi-minfork.
+- Return JSON:API errors when schema serialization raises TypeError.
 
 
 ## 1.4.1 (2026-02-02)
