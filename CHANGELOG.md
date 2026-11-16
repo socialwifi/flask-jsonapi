@@ -3,6 +3,7 @@
 
 - Support marshmallow 4.0 and switch to marshmallow-jsonapi-minfork.
 - Return JSON:API errors when schema serialization raises TypeError.
+- Drop support for EOL Python versions (3.9, 3.10), add new ones (3.13, 3.14, 3.15). 
 
 
 ## 1.4.1 (2026-02-02)
