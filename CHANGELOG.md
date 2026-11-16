@@ -1,4 +1,4 @@
-## 1.5.0 (unreleased)
+## 1.5.0 (2026-11-16)
 ---------------------
 
 - Support marshmallow 4.0 and switch to marshmallow-jsonapi-minfork.
